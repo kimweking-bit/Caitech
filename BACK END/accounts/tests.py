@@ -49,6 +49,21 @@ class RegistrationTests(APITestCase):
 		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 		self.assertIn('email', response.data)
 
+	def test_duplicate_email_is_rejected_case_insensitively(self):
+		User.objects.create_user(
+			username='existing',
+			email='New-Student@Example.com',
+			password=PASSWORD,
+		)
+
+		response = self.register()
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertEqual(
+			str(response.data['email'][0]),
+			'A user with this email already exists.',
+		)
+
 	def test_weak_and_missing_password_are_rejected(self):
 		weak_response = self.register(password='123')
 		missing_response = self.client.post(
