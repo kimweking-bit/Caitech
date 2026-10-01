@@ -25,11 +25,12 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR / '.env')
 
-SECRET_KEY = env(
-    'SECRET_KEY',
-    default='prod-config-sample-secret-key-1234567890-abcdefghijklmnopqrstuvwxyz',
-)
 DEBUG = env.bool('DEBUG', default=False)
+
+if DEBUG:
+    SECRET_KEY = env('SECRET_KEY', default='dev-only-secret-key-change-me')
+else:
+    SECRET_KEY = env('SECRET_KEY')
 
 ALLOWED_HOSTS = env.list(
     'ALLOWED_HOSTS',
