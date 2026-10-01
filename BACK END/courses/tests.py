@@ -1,4 +1,7 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -196,6 +199,25 @@ class EnrollmentApiTests(APITestCase):
 
 		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 		self.assertEqual(Enrollment.objects.filter(student=self.student, course=self.course).count(), 1)
+
+	def test_integrity_error_during_enrollment_returns_validation_error(self):
+		self.client.force_authenticate(self.student)
+
+		with patch(
+			'courses.views.EnrollmentSerializer.save',
+			side_effect=IntegrityError('simulated enrollment race'),
+		):
+			response = self.client.post(
+				self.enroll_url,
+				{'course': self.course.pk},
+				format='json',
+			)
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertEqual(
+			response.data['detail'],
+			'You are already enrolled in this course.',
+		)
 
 	def test_anonymous_user_cannot_enroll(self):
 		response = self.client.post(

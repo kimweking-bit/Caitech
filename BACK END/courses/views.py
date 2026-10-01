@@ -1,4 +1,6 @@
+from django.db import IntegrityError, transaction
 from rest_framework import generics, permissions
+from rest_framework.exceptions import ValidationError
 from .models import Category, Course, Lesson, Enrollment
 from .serializers import CategorySerializer, CourseSerializer, LessonSerializer, EnrollmentSerializer
 from .permissions import IsVerifiedInstructor
@@ -39,7 +41,16 @@ class EnrollmentCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(student=self.request.user)
+        course = serializer.validated_data['course']
+        error = {'detail': 'You are already enrolled in this course.'}
+        if Enrollment.objects.filter(student=self.request.user, course=course).exists():
+            raise ValidationError(error)
+
+        try:
+            with transaction.atomic():
+                serializer.save(student=self.request.user)
+        except IntegrityError as exc:
+            raise ValidationError(error) from exc
 
 
 class MyEnrollmentsView(generics.ListAPIView):
