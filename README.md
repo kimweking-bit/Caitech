@@ -88,6 +88,23 @@ Course updates, curriculum mutations, and resource changes are restricted to
 the verified course owner or an admin. Existing `/api/courses/` routes remain
 available for backwards compatibility.
 
+## Enrolment, progress, and reviews API
+
+Phase 3 student endpoints also live under `/api/v1/courses/` and require a JWT
+unless stated otherwise. Completion percentages are calculated from lessons in
+the course; clients cannot set enrollment completion or completion timestamps.
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/api/v1/courses/dashboard/` | Authenticated | Paginated `my_courses` with completed/total lesson counts and progress percentage; `certificates` is an empty placeholder until certificates are implemented. |
+| GET, POST | `/api/v1/courses/enrollments/{id}/progress/` | Owning enrolled student | Read lesson progress or upsert a record using `lesson` and `completed`. Lesson must belong to the enrolled course. |
+| GET, POST | `/api/v1/courses/{slug}/reviews/` | Public GET; enrolled student POST | List paginated reviews or create the student's single review (`rating` 1–5, optional `comment`). |
+| GET, PATCH, PUT, DELETE | `/api/v1/courses/reviews/{id}/` | Public GET; review author/admin writes | Retrieve or manage an existing review. |
+
+Progress is unique per enrollment and lesson. Updating all lessons to completed
+sets the enrollment's completion state; uncompleting a lesson recalculates it.
+Course catalog and detail responses include the average rating and review count.
+
 ### Production environment variables
 
 Use the settings below in the environment that runs the app:

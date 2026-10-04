@@ -1,6 +1,15 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
-from .models import Category, Course, CourseResource, Enrollment, Lesson, Section
+from .models import (
+    Category,
+    Course,
+    CourseResource,
+    CourseReview,
+    Enrollment,
+    Lesson,
+    LessonProgress,
+    Section,
+)
 
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -29,13 +38,15 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
     lessons = serializers.SerializerMethodField()
     category_name = serializers.CharField(source='category.name', read_only=True)
     instructor_username = serializers.CharField(source='instructor.username', read_only=True)
+    average_rating = serializers.FloatField(read_only=True, allow_null=True)
+    review_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Course
         fields = [
             'id', 'title', 'slug', 'description', 'category', 'category_name',
             'instructor', 'instructor_username', 'price', 'is_free', 'created_at',
-            'sections', 'lessons',
+            'sections', 'lessons', 'average_rating', 'review_count',
         ]
         read_only_fields = ['instructor']
 
@@ -127,6 +138,68 @@ class VersionedCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name', 'slug']
+
+
+class LessonProgressSerializer(serializers.ModelSerializer):
+    lesson_title = serializers.CharField(source='lesson.title', read_only=True)
+    lesson_order = serializers.IntegerField(source='lesson.order', read_only=True)
+
+    class Meta:
+        model = LessonProgress
+        fields = [
+            'id', 'lesson', 'lesson_title', 'lesson_order', 'completed',
+            'completed_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'lesson_title', 'lesson_order', 'completed_at', 'updated_at']
+
+    def validate_lesson(self, lesson):
+        enrollment = self.context['enrollment']
+        if lesson.course_id != enrollment.course_id:
+            raise serializers.ValidationError('Lesson must belong to the enrolled course.')
+        return lesson
+
+
+class DashboardEnrollmentSerializer(serializers.ModelSerializer):
+    course_id = serializers.IntegerField(source='course.id', read_only=True)
+    course_title = serializers.CharField(source='course.title', read_only=True)
+    course_slug = serializers.SlugField(source='course.slug', read_only=True)
+    completed_lessons = serializers.SerializerMethodField()
+    total_lessons = serializers.SerializerMethodField()
+    progress_percentage = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Enrollment
+        fields = [
+            'id', 'course_id', 'course_title', 'course_slug', 'enrolled_at',
+            'completed', 'completed_lessons', 'total_lessons', 'progress_percentage',
+        ]
+
+    def get_total_lessons(self, enrollment):
+        return enrollment.course.lessons.count()
+
+    def get_completed_lessons(self, enrollment):
+        return enrollment.lesson_progress.filter(completed=True).count()
+
+    def get_progress_percentage(self, enrollment):
+        total = self.get_total_lessons(enrollment)
+        if total == 0:
+            return 0
+        completed = self.get_completed_lessons(enrollment)
+        return round(completed * 100 / total, 2)
+
+
+class CourseReviewSerializer(serializers.ModelSerializer):
+    student_username = serializers.CharField(source='student.username', read_only=True)
+
+    class Meta:
+        model = CourseReview
+        fields = ['id', 'student_username', 'rating', 'comment', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'student_username', 'created_at', 'updated_at']
+
+    def validate_rating(self, value):
+        if not 1 <= value <= 5:
+            raise serializers.ValidationError('Rating must be between 1 and 5.')
+        return value
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
