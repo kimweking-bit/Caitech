@@ -9,9 +9,26 @@ class LessonSerializer(serializers.ModelSerializer):
 
 
 class CourseSerializer(serializers.ModelSerializer):
-    lessons = LessonSerializer(many=True, read_only=True)
+    lessons = serializers.SerializerMethodField()
     category_name = serializers.CharField(source='category.name', read_only=True)
     instructor_username = serializers.CharField(source='instructor.username', read_only=True)
+
+    def get_lessons(self, course):
+        request = self.context.get('request')
+        user = request.user if request else None
+        has_full_access = bool(
+            user
+            and user.is_authenticated
+            and (
+                user.is_staff
+                or course.instructor_id == user.pk
+                or course.enrollments.filter(student_id=user.pk).exists()
+            )
+        )
+        lessons = course.lessons.all()
+        if not has_full_access:
+            lessons = lessons.filter(is_preview=True)
+        return LessonSerializer(lessons, many=True, context=self.context).data
 
     class Meta:
         model = Course
