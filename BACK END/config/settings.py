@@ -47,7 +47,11 @@ CSRF_TRUSTED_ORIGINS = env.list(
 )
 
 PAYMENT_PROVIDER_API_KEY = env('PAYMENT_PROVIDER_API_KEY', default='')
+AI_PROVIDER = env('AI_PROVIDER', default='')
 AI_API_KEY = env('AI_API_KEY', default='')
+AI_MODEL = env('AI_MODEL', default='')
+AI_API_BASE_URL = env('AI_API_BASE_URL', default='')
+AI_REQUEST_TIMEOUT_SECONDS = env.int('AI_REQUEST_TIMEOUT_SECONDS', default=15)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -144,6 +148,7 @@ REST_FRAMEWORK = {
         'password_reset': '3/hour',
         'newsletter': '5/hour',
         'contact': '5/hour',
+        'ai_path': '5/hour',
     },
 }
 
