@@ -1,5 +1,19 @@
 from django.urls import path
 
+from .assessment_views import (
+    AssignmentDetailV1,
+    AssignmentListCreateV1,
+    AssignmentSubmissionDetailV1,
+    AssignmentSubmissionListCreateV1,
+    ChoiceDetailV1,
+    QuizAttemptDetailV1,
+    QuizAttemptsV1,
+    QuizDetailV1,
+    QuizListCreateV1,
+    QuizQuestionListCreateV1,
+    QuestionChoiceListCreateV1,
+    QuestionDetailV1,
+)
 from .api_views import (
     CategoryDetailV1,
     CategoryListCreateV1,
@@ -19,6 +33,18 @@ from .api_views import (
 )
 
 urlpatterns = [
+    path('<slug:course_slug>/quizzes/', QuizListCreateV1.as_view(), name='api-v1-course-quizzes'),
+    path('quizzes/<int:pk>/', QuizDetailV1.as_view(), name='api-v1-quiz-detail'),
+    path('quizzes/<int:quiz_pk>/questions/', QuizQuestionListCreateV1.as_view(), name='api-v1-quiz-questions'),
+    path('questions/<int:pk>/', QuestionDetailV1.as_view(), name='api-v1-question-detail'),
+    path('questions/<int:question_pk>/choices/', QuestionChoiceListCreateV1.as_view(), name='api-v1-question-choices'),
+    path('choices/<int:pk>/', ChoiceDetailV1.as_view(), name='api-v1-choice-detail'),
+    path('quizzes/<int:quiz_pk>/attempts/', QuizAttemptsV1.as_view(), name='api-v1-quiz-attempts'),
+    path('quiz-attempts/<int:pk>/', QuizAttemptDetailV1.as_view(), name='api-v1-quiz-attempt-detail'),
+    path('<slug:course_slug>/assignments/', AssignmentListCreateV1.as_view(), name='api-v1-course-assignments'),
+    path('assignments/<int:pk>/', AssignmentDetailV1.as_view(), name='api-v1-assignment-detail'),
+    path('assignments/<int:assignment_pk>/submissions/', AssignmentSubmissionListCreateV1.as_view(), name='api-v1-assignment-submissions'),
+    path('submissions/<int:pk>/', AssignmentSubmissionDetailV1.as_view(), name='api-v1-assignment-submission-detail'),
     path('dashboard/', StudentDashboardV1.as_view(), name='api-v1-student-dashboard'),
     path('enrollments/<int:enrollment_pk>/progress/', EnrollmentProgressV1.as_view(), name='api-v1-enrollment-progress'),
     path('categories/', CategoryListCreateV1.as_view(), name='api-v1-category-list'),
