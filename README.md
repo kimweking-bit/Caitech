@@ -38,6 +38,30 @@ python manage.py migrate
 python manage.py runserver
 ```
 
+## Versioned authentication API
+
+The current authentication API is under `/api/v1/auth/`. Protected endpoints use
+`Authorization: Bearer <access-token>`. Registration creates a student account;
+role flags are read-only to users. Admin accounts are Django staff/superuser
+accounts, and only staff can review instructor requests.
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| POST | `/api/v1/auth/register/` | Public | Create a student account (`username`, `email`, `password`). |
+| POST | `/api/v1/auth/login/` | Public, 5 requests/minute | Obtain access and refresh JWTs. |
+| POST | `/api/v1/auth/token/refresh/` | Public | Exchange a refresh token for a new access token. |
+| GET, PATCH | `/api/v1/auth/me/` | Authenticated | Read or update the current user's profile; roles are read-only. |
+| POST | `/api/v1/auth/password/reset/` | Public, 3 requests/hour | Request a password reset email using `email`. The response does not reveal whether the account exists. |
+| POST | `/api/v1/auth/password/reset/confirm/` | Public, 3 requests/hour | Reset using `uid`, `token`, and `new_password`. |
+| POST | `/api/v1/auth/instructor/request/` | Authenticated | Submit the current account for instructor review. |
+| GET | `/api/v1/auth/instructor/requests/` | Admin | Paginated queue of pending instructor requests. |
+| POST | `/api/v1/auth/instructor/requests/{id}/review/` | Admin | Review with `{"approved": true}` or `{"approved": false}`. |
+
+Password-reset links target `${FRONTEND_URL}/reset-password/`; set `FRONTEND_URL`
+and a production email backend plus `DEFAULT_FROM_EMAIL` in the deployment
+environment. Existing `/api/accounts/` and `/api/token/` routes remain available
+for backwards compatibility.
+
 ### Production environment variables
 
 Use the settings below in the environment that runs the app:
@@ -55,6 +79,8 @@ Use the settings below in the environment that runs the app:
 - SECURE_PROXY_SSL_HEADER=HTTP_X_FORWARDED_PROTO,https
 - PAYMENT_PROVIDER_API_KEY=your-payment-provider-key
 - AI_API_KEY=your-ai-service-key
+- FRONTEND_URL=https://your-domain.com
+- DEFAULT_FROM_EMAIL=noreply@your-domain.com
 - ACCESS_TOKEN_LIFETIME_MINUTES=15
 - REFRESH_TOKEN_LIFETIME_DAYS=7
 

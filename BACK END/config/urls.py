@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
+from accounts.views import LoginView
 
 
 def home_view(request):
@@ -108,9 +109,10 @@ def home_view(request):
 urlpatterns = [
     path('', home_view, name='home'),
     path('admin/', admin.site.urls),
+    path('api/v1/auth/', include('accounts.api_urls')),
     path('api/courses/', include('courses.urls')),
     path('api/accounts/', include('accounts.urls')),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/', LoginView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
