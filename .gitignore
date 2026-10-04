@@ -19,3 +19,5 @@ node_modules/
 Thumbs.db
 db.sqlite3
 staticfiles/
+media/
+BACK END/media/
