@@ -70,7 +70,7 @@ responses use page-number pagination with `count`, `next`, `previous`, and
 
 | Method | Endpoint | Access | Purpose |
 | --- | --- | --- | --- |
-| GET, POST | `/api/v1/courses/` | Public GET; verified instructor/admin POST | Search with `search`; filter by `category` slug, `is_free`, `min_price`, and `max_price`; order by `title`, `price`, or `created_at`. |
+| GET, POST | `/api/v1/courses/` | Public GET; verified instructor/admin POST | Search with `search`; filter by `category` slug, `course_type`, `delivery_mode`, `is_free`, `min_price`, and `max_price`; order by `title`, `price`, or `created_at`. |
 | GET, POST | `/api/v1/courses/categories/` | Public GET; admin POST | Paginated category list and category creation. |
 | GET, PATCH, PUT, DELETE | `/api/v1/courses/categories/{slug}/` | Public GET; admin writes | Retrieve or manage a category. |
 | GET, PATCH, PUT, DELETE | `/api/v1/courses/{slug}/` | Public GET; course owner/admin writes | Retrieve, update, or delete a course. Details include ordered sections and accessible lessons. |
@@ -87,6 +87,32 @@ and their resources require course enrollment, course ownership, or admin access
 Course updates, curriculum mutations, and resource changes are restricted to
 the verified course owner or an admin. Existing `/api/courses/` routes remain
 available for backwards compatibility.
+
+Course catalog responses also expose `course_type` (`diploma`, `certificate`,
+`short_course`), `duration`, `delivery_modes` (a list containing `online`,
+`physical`, and/or `recorded`), `intake_status` (`ongoing`, `upcoming`, `closed`),
+and `whatsapp_inquiry_url`. Filter `course_type` by its exact value and
+`delivery_mode` by one mode per request. These fields are blank for legacy
+courses until staff populate them.
+
+## College website content APIs
+
+Public blog APIs show published posts only. Staff can create posts, see drafts,
+and edit or delete posts. Blog image uploads use the configured media storage.
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| GET, POST | `/api/v1/blog/posts/` | Public GET; staff POST | Paginated published posts, or create a post with title, slug, excerpt, body, optional `featured_image`, `status`, `published_at`, category slugs, and tag slugs. |
+| GET, PATCH, PUT, DELETE | `/api/v1/blog/posts/{slug}/` | Public published GET; staff access/writes | Retrieve a published post or manage posts, including drafts for staff. |
+| POST | `/api/v1/newsletter/subscribe/` | Public, 5 requests/hour | Subscribe with a valid `email`; duplicate addresses are rejected case-insensitively. |
+| GET | `/api/v1/newsletter/subscriptions/` | Admin/staff | Paginated subscription list. |
+| POST | `/api/v1/contact/` | Public, 5 requests/hour | Submit `name`, `email`, `phone`, `message`, and optional course ID. The hidden `website` honeypot must be empty. |
+| GET | `/api/v1/contact/inquiries/` | Admin/staff | Paginated stored inquiries. |
+
+Contact phone values must contain at least seven digits and messages at least ten
+characters. A filled honeypot receives a generic accepted response but is not
+stored. Uploaded media is served locally in development; production deployment
+must provide persistent media storage and serving.
 
 ## Enrolment, progress, and reviews API
 

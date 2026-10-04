@@ -40,6 +40,22 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
     instructor_username = serializers.CharField(source='instructor.username', read_only=True)
     average_rating = serializers.FloatField(read_only=True, allow_null=True)
     review_count = serializers.IntegerField(read_only=True)
+    course_type = serializers.ChoiceField(
+        choices=Course.CourseType.choices,
+        required=False,
+        allow_blank=True,
+    )
+    duration = serializers.CharField(required=False, allow_blank=True)
+    delivery_modes = serializers.ListField(
+        child=serializers.ChoiceField(choices=Course.DeliveryMode.choices),
+        required=False,
+    )
+    intake_status = serializers.ChoiceField(
+        choices=Course.IntakeStatus.choices,
+        required=False,
+        allow_blank=True,
+    )
+    whatsapp_inquiry_url = serializers.URLField(required=False, allow_blank=True)
 
     class Meta:
         model = Course
@@ -47,6 +63,8 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
             'id', 'title', 'slug', 'description', 'category', 'category_name',
             'instructor', 'instructor_username', 'price', 'is_free', 'created_at',
             'sections', 'lessons', 'average_rating', 'review_count',
+            'course_type', 'duration', 'delivery_modes', 'intake_status',
+            'whatsapp_inquiry_url',
         ]
         read_only_fields = ['instructor']
 
