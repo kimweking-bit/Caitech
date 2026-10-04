@@ -110,6 +110,7 @@ urlpatterns = [
     path('', home_view, name='home'),
     path('admin/', admin.site.urls),
     path('api/v1/auth/', include('accounts.api_urls')),
+    path('api/v1/courses/', include('courses.api_urls')),
     path('api/courses/', include('courses.urls')),
     path('api/accounts/', include('accounts.urls')),
     path('api/token/', LoginView.as_view(), name='token_obtain_pair'),

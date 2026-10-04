@@ -5,12 +5,12 @@
 ### Local development
 
 1. Open a terminal in the repo root.
-2. Create and activate a virtual environment inside the backend folder:
+2. Create and activate the project virtual environment from the repository root:
 
 ```bash
+python -m venv .venv
+source .venv/Scripts/activate
 cd "BACK END"
-python -m venv venv
-source venv/Scripts/activate
 ```
 
 3. Install dependencies:
@@ -61,6 +61,32 @@ Password-reset links target `${FRONTEND_URL}/reset-password/`; set `FRONTEND_URL
 and a production email backend plus `DEFAULT_FROM_EMAIL` in the deployment
 environment. Existing `/api/accounts/` and `/api/token/` routes remain available
 for backwards compatibility.
+
+## Versioned course API
+
+Course and curriculum endpoints are under `/api/v1/courses/`. Public catalog
+responses use page-number pagination with `count`, `next`, `previous`, and
+`results`; the default page size is 20 and `page_size` is capped at 100.
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| GET, POST | `/api/v1/courses/` | Public GET; verified instructor/admin POST | Search with `search`; filter by `category` slug, `is_free`, `min_price`, and `max_price`; order by `title`, `price`, or `created_at`. |
+| GET, POST | `/api/v1/courses/categories/` | Public GET; admin POST | Paginated category list and category creation. |
+| GET, PATCH, PUT, DELETE | `/api/v1/courses/categories/{slug}/` | Public GET; admin writes | Retrieve or manage a category. |
+| GET, PATCH, PUT, DELETE | `/api/v1/courses/{slug}/` | Public GET; course owner/admin writes | Retrieve, update, or delete a course. Details include ordered sections and accessible lessons. |
+| GET, POST | `/api/v1/courses/{slug}/sections/` | Public GET; course owner/admin POST | List or create ordered sections. Section order is unique within a course. |
+| GET, PATCH, PUT, DELETE | `/api/v1/courses/sections/{id}/` | Public GET; course owner/admin writes | Retrieve or manage a section. |
+| GET, POST | `/api/v1/courses/sections/{id}/lessons/` | Public preview GET; course owner/admin POST | List accessible lessons or create an ordered lesson in the section. |
+| GET, PATCH, PUT, DELETE | `/api/v1/courses/lessons/{id}/` | Preview or entitled GET; course owner/admin writes | Retrieve or manage a lesson. |
+| GET, POST | `/api/v1/courses/lessons/{id}/resources/` | Preview or entitled GET; course owner/admin POST | List or upload files using `multipart/form-data` fields `title`, `order`, and `file`. |
+| GET, PATCH, PUT, DELETE | `/api/v1/courses/resources/{id}/` | Preview or entitled GET; course owner/admin writes | Retrieve or manage resource metadata. |
+| GET | `/api/v1/courses/resources/{id}/download/` | Preview or course entitlement | Stream a resource file; storage paths are never exposed as public URLs. |
+
+Lessons and resources marked as previews are publicly accessible. Other lessons
+and their resources require course enrollment, course ownership, or admin access.
+Course updates, curriculum mutations, and resource changes are restricted to
+the verified course owner or an admin. Existing `/api/courses/` routes remain
+available for backwards compatibility.
 
 ### Production environment variables
 

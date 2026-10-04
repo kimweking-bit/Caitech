@@ -31,18 +31,57 @@ class Course(models.Model):
         return self.title
 
 
+class Section(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='sections')
+    title = models.CharField(max_length=200)
+    order = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ['order', 'pk']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['course', 'order'],
+                name='unique_section_order_per_course',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.course.title} - {self.title}"
+
+
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='lessons')
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE,
+        related_name='lessons',
+        blank=True,
+        null=True,
+    )
     title = models.CharField(max_length=200)
     video_url = models.URLField(blank=True, null=True)
     is_preview = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=1)
 
     class Meta:
-        ordering = ['order']
+        ordering = ['section__order', 'order', 'pk']
 
     def __str__(self):
         return f"{self.course.title} - {self.title}"
+
+
+class CourseResource(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='resources')
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='course_resources/%Y/%m/')
+    order = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'pk']
+
+    def __str__(self):
+        return self.title
 
 
 class Enrollment(models.Model):
