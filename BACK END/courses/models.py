@@ -164,3 +164,135 @@ class CourseReview(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.course} ({self.rating}/5)"
+
+
+class Quiz(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='quizzes')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    max_attempts = models.PositiveSmallIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at', 'pk']
+
+    def __str__(self):
+        return f"{self.course.title} - {self.title}"
+
+
+class Question(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
+    prompt = models.TextField()
+    order = models.PositiveIntegerField(default=1)
+    points = models.DecimalField(max_digits=7, decimal_places=2, default=1)
+    allow_multiple = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['order', 'pk']
+        constraints = [
+            models.UniqueConstraint(fields=['quiz', 'order'], name='unique_question_order_per_quiz'),
+            models.CheckConstraint(condition=models.Q(points__gt=0), name='question_points_must_be_positive'),
+        ]
+
+    def __str__(self):
+        return f"{self.quiz.title} - Question {self.order}"
+
+
+class Choice(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
+    text = models.CharField(max_length=1000)
+    is_correct = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ['order', 'pk']
+        constraints = [
+            models.UniqueConstraint(fields=['question', 'order'], name='unique_choice_order_per_question'),
+        ]
+
+    def __str__(self):
+        return self.text
+
+
+class QuizAttempt(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts')
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='quiz_attempts',
+    )
+    attempt_number = models.PositiveSmallIntegerField()
+    answers = models.JSONField(default=list)
+    score = models.DecimalField(max_digits=9, decimal_places=2)
+    total_points = models.DecimalField(max_digits=9, decimal_places=2)
+    started_at = models.DateTimeField(auto_now_add=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-submitted_at', '-pk']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['quiz', 'student', 'attempt_number'],
+                name='unique_quiz_attempt_number_per_student',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.student} - {self.quiz} ({self.score}/{self.total_points})"
+
+
+class Assignment(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='assignments')
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    due_at = models.DateTimeField(blank=True, null=True)
+    max_points = models.DecimalField(max_digits=7, decimal_places=2, default=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['due_at', 'created_at', 'pk']
+        constraints = [
+            models.CheckConstraint(condition=models.Q(max_points__gt=0), name='assignment_max_points_must_be_positive'),
+        ]
+
+    def __str__(self):
+        return f"{self.course.title} - {self.title}"
+
+
+class AssignmentSubmission(models.Model):
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='submissions')
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='assignment_submissions',
+    )
+    content = models.TextField()
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    grade = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
+    feedback = models.TextField(blank=True)
+    graded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='graded_assignment_submissions',
+        blank=True,
+        null=True,
+    )
+    graded_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['submitted_at', 'pk']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['assignment', 'student'],
+                name='unique_submission_per_assignment_student',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(grade__isnull=True) | models.Q(grade__gte=0),
+                name='assignment_submission_grade_nonnegative',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.student} - {self.assignment}"

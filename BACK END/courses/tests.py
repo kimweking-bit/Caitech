@@ -1,15 +1,32 @@
 from unittest.mock import patch
 import tempfile
+from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.test import override_settings
+from django.utils import timezone
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Category, Course, CourseReview, Enrollment, Lesson, LessonProgress, Section
+from .models import (
+	Assignment,
+	AssignmentSubmission,
+	Category,
+	Choice,
+	Course,
+	CourseReview,
+	Enrollment,
+	Lesson,
+	LessonProgress,
+	Question,
+	Quiz,
+	QuizAttempt,
+	Section,
+)
 
 
 User = get_user_model()
@@ -811,4 +828,295 @@ class Phase3CourseReviewApiTests(APITestCase):
 		self.assertEqual(
 			self.client.patch(review_url, {'rating': 5}, format='json').status_code,
 			status.HTTP_200_OK,
+		)
+
+
+class Phase5QuizApiTests(APITestCase):
+	def setUp(self):
+		self.owner = User.objects.create_user(
+			username='quiz-owner', password=PASSWORD,
+			is_student=False, is_instructor=True, is_verified_instructor=True,
+		)
+		self.other_instructor = User.objects.create_user(
+			username='quiz-other', password=PASSWORD,
+			is_student=False, is_instructor=True, is_verified_instructor=True,
+		)
+		self.student = User.objects.create_user(username='quiz-student', password=PASSWORD)
+		self.other_student = User.objects.create_user(username='quiz-other-student', password=PASSWORD)
+		category = Category.objects.create(name='Assessments', slug='assessments')
+		self.course = Course.objects.create(
+			title='Quiz Course', slug='quiz-course', description='Quiz tests',
+			category=category, instructor=self.owner, is_free=True,
+		)
+		Enrollment.objects.create(student=self.student, course=self.course)
+		self.quiz = Quiz.objects.create(
+			course=self.course, title='Knowledge Check', max_attempts=1,
+		)
+		self.single_question = Question.objects.create(
+			quiz=self.quiz, prompt='Select the correct answer.', order=1, points=Decimal('2.00')
+		)
+		self.single_correct = Choice.objects.create(
+			question=self.single_question, text='Correct', is_correct=True, order=1
+		)
+		self.single_wrong = Choice.objects.create(
+			question=self.single_question, text='Incorrect', is_correct=False, order=2
+		)
+		self.multiple_question = Question.objects.create(
+			quiz=self.quiz, prompt='Select both correct answers.', order=2,
+			points=Decimal('3.00'), allow_multiple=True,
+		)
+		self.multiple_correct_a = Choice.objects.create(
+			question=self.multiple_question, text='Correct A', is_correct=True, order=1
+		)
+		self.multiple_correct_b = Choice.objects.create(
+			question=self.multiple_question, text='Correct B', is_correct=True, order=2
+		)
+		self.multiple_wrong = Choice.objects.create(
+			question=self.multiple_question, text='Incorrect', is_correct=False, order=3
+		)
+		self.quiz_url = reverse('api-v1-quiz-detail', kwargs={'pk': self.quiz.pk})
+		self.attempts_url = reverse('api-v1-quiz-attempts', kwargs={'quiz_pk': self.quiz.pk})
+
+	def test_only_enrolled_students_can_access_and_attempt_quiz(self):
+		self.client.force_authenticate(self.other_student)
+		self.assertEqual(self.client.get(self.quiz_url).status_code, status.HTTP_403_FORBIDDEN)
+		self.assertEqual(
+			self.client.post(self.attempts_url, {'answers': []}, format='json').status_code,
+			status.HTTP_404_NOT_FOUND,
+		)
+
+		self.client.force_authenticate(self.student)
+		self.assertEqual(self.client.get(self.quiz_url).status_code, status.HTTP_200_OK)
+
+	def test_student_quiz_responses_never_expose_correct_answers(self):
+		self.client.force_authenticate(self.student)
+		quiz_response = self.client.get(self.quiz_url)
+		questions_response = self.client.get(
+			reverse('api-v1-quiz-questions', kwargs={'quiz_pk': self.quiz.pk})
+		)
+		choices_response = self.client.get(
+			reverse(
+				'api-v1-question-choices',
+				kwargs={'question_pk': self.single_question.pk},
+			)
+		)
+
+		self.assertEqual(quiz_response.status_code, status.HTTP_200_OK)
+		for question in quiz_response.data['questions']:
+			for choice in question['choices']:
+				self.assertNotIn('is_correct', choice)
+		for question in questions_response.data['results']:
+			for choice in question['choices']:
+				self.assertNotIn('is_correct', choice)
+		for choice in choices_response.data['results']:
+			self.assertNotIn('is_correct', choice)
+
+		self.client.force_authenticate(self.owner)
+		instructor_response = self.client.get(self.quiz_url)
+		self.assertTrue(
+			any('is_correct' in choice for question in instructor_response.data['questions']
+				for choice in question['choices'])
+		)
+
+	def test_quiz_is_graded_server_side_and_results_are_stored(self):
+		self.client.force_authenticate(self.student)
+		response = self.client.post(
+			self.attempts_url,
+			{
+				'answers': [
+					{'question': self.single_question.pk, 'choices': [self.single_correct.pk]},
+					{
+						'question': self.multiple_question.pk,
+						'choices': [self.multiple_correct_a.pk, self.multiple_correct_b.pk],
+					},
+				],
+				'score': '999.00',
+			},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+		self.assertEqual(Decimal(response.data['score']), Decimal('5.00'))
+		self.assertEqual(Decimal(response.data['total_points']), Decimal('5.00'))
+		self.assertNotIn('answers', response.data)
+		self.assertNotIn('is_correct', response.data)
+		attempt = QuizAttempt.objects.get(pk=response.data['id'])
+		self.assertEqual(attempt.student, self.student)
+		self.assertEqual(attempt.answers[0]['choices'], [self.single_correct.pk])
+		self.assertEqual(attempt.score, Decimal('5.00'))
+
+	def test_incorrect_answers_receive_no_credit_and_attempt_limit_is_enforced(self):
+		self.client.force_authenticate(self.student)
+		first = self.client.post(
+			self.attempts_url,
+			{
+				'answers': [
+					{'question': self.single_question.pk, 'choices': [self.single_wrong.pk]},
+					{
+						'question': self.multiple_question.pk,
+						'choices': [self.multiple_correct_a.pk],
+					},
+				]
+			},
+			format='json',
+		)
+		second = self.client.post(self.attempts_url, {'answers': []}, format='json')
+
+		self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+		self.assertEqual(Decimal(first.data['score']), Decimal('0.00'))
+		self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertEqual(QuizAttempt.objects.filter(quiz=self.quiz, student=self.student).count(), 1)
+
+	def test_non_owner_instructor_cannot_create_or_edit_quiz_content(self):
+		self.client.force_authenticate(self.other_instructor)
+		course_quizzes = reverse(
+			'api-v1-course-quizzes', kwargs={'course_slug': self.course.slug}
+		)
+		self.assertEqual(
+			self.client.post(
+				course_quizzes,
+				{'title': 'Unauthorized', 'max_attempts': 1},
+				format='json',
+			).status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+		self.assertEqual(
+			self.client.patch(self.quiz_url, {'title': 'Changed'}, format='json').status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+		questions_url = reverse('api-v1-quiz-questions', kwargs={'quiz_pk': self.quiz.pk})
+		self.assertEqual(
+			self.client.post(
+				questions_url,
+				{'prompt': 'Unauthorized', 'order': 3, 'points': '1.00'},
+				format='json',
+			).status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+
+		self.client.force_authenticate(self.owner)
+		self.assertEqual(
+			self.client.post(
+				questions_url,
+				{'prompt': 'Owner question', 'order': 3, 'points': '1.00'},
+				format='json',
+			).status_code,
+			status.HTTP_201_CREATED,
+		)
+
+
+class Phase5AssignmentApiTests(APITestCase):
+	def setUp(self):
+		self.owner = User.objects.create_user(
+			username='assignment-owner', password=PASSWORD,
+			is_student=False, is_instructor=True, is_verified_instructor=True,
+		)
+		self.other_instructor = User.objects.create_user(
+			username='assignment-other', password=PASSWORD,
+			is_student=False, is_instructor=True, is_verified_instructor=True,
+		)
+		self.student = User.objects.create_user(username='assignment-student', password=PASSWORD)
+		self.other_student = User.objects.create_user(username='assignment-other-student', password=PASSWORD)
+		category = Category.objects.create(name='Assignments', slug='assignments')
+		self.course = Course.objects.create(
+			title='Assignment Course', slug='assignment-course', description='Assignment tests',
+			category=category, instructor=self.owner, is_free=True,
+		)
+		Enrollment.objects.create(student=self.student, course=self.course)
+		self.assignment = Assignment.objects.create(
+			course=self.course,
+			title='Short essay',
+			description='Write a short essay.',
+			due_at=timezone.now() + timedelta(days=1),
+			max_points=Decimal('10.00'),
+		)
+		self.assignments_url = reverse(
+			'api-v1-course-assignments', kwargs={'course_slug': self.course.slug}
+		)
+		self.submissions_url = reverse(
+			'api-v1-assignment-submissions', kwargs={'assignment_pk': self.assignment.pk}
+		)
+
+	def test_only_enrolled_students_can_submit_and_duplicate_or_late_submissions_fail(self):
+		self.client.force_authenticate(self.other_student)
+		self.assertEqual(
+			self.client.post(self.submissions_url, {'content': 'answer'}, format='json').status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+
+		self.client.force_authenticate(self.student)
+		first = self.client.post(self.submissions_url, {'content': 'answer'}, format='json')
+		duplicate = self.client.post(self.submissions_url, {'content': 'second answer'}, format='json')
+		self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+		self.assertIsNone(first.data['grade'])
+		self.assertEqual(duplicate.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertEqual(AssignmentSubmission.objects.filter(assignment=self.assignment).count(), 1)
+
+		late_assignment = Assignment.objects.create(
+			course=self.course,
+			title='Late task',
+			description='Already closed.',
+			due_at=timezone.now() - timedelta(seconds=1),
+		)
+		late_url = reverse(
+			'api-v1-assignment-submissions', kwargs={'assignment_pk': late_assignment.pk}
+		)
+		late = self.client.post(late_url, {'content': 'too late'}, format='json')
+		self.assertEqual(late.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertFalse(AssignmentSubmission.objects.filter(assignment=late_assignment).exists())
+
+	def test_course_owner_can_create_and_grade_but_other_instructors_and_students_cannot(self):
+		self.client.force_authenticate(self.other_instructor)
+		self.assertEqual(
+			self.client.post(
+				self.assignments_url,
+				{'title': 'Unauthorized', 'description': 'No', 'max_points': '10.00'},
+				format='json',
+			).status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+		assignment_url = reverse('api-v1-assignment-detail', kwargs={'pk': self.assignment.pk})
+		self.assertEqual(
+			self.client.patch(assignment_url, {'title': 'Changed'}, format='json').status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+
+		self.client.force_authenticate(self.student)
+		submission = self.client.post(
+			self.submissions_url, {'content': 'My work'}, format='json'
+		)
+		submission_url = reverse(
+			'api-v1-assignment-submission-detail', kwargs={'pk': submission.data['id']}
+		)
+		self.assertEqual(
+			self.client.patch(
+				submission_url, {'grade': '8.00', 'feedback': 'Good work.'}, format='json'
+			).status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+
+		self.client.force_authenticate(self.other_instructor)
+		self.assertEqual(
+			self.client.patch(
+				submission_url, {'grade': '8.00', 'feedback': 'Good work.'}, format='json'
+			).status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+
+		self.client.force_authenticate(self.owner)
+		graded = self.client.patch(
+			submission_url, {'grade': '8.00', 'feedback': 'Good work.'}, format='json'
+		)
+		self.assertEqual(graded.status_code, status.HTTP_200_OK)
+		self.assertEqual(graded.data['grade'], '8.00')
+		self.assertEqual(graded.data['feedback'], 'Good work.')
+		stored_submission = AssignmentSubmission.objects.get(pk=submission.data['id'])
+		self.assertEqual(stored_submission.graded_by, self.owner)
+		too_high = self.client.patch(
+			submission_url, {'grade': '11.00'}, format='json'
+		)
+		self.assertEqual(too_high.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertEqual(
+			stored_submission.grade,
+			Decimal('8.00'),
 		)

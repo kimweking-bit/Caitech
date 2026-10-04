@@ -105,6 +105,31 @@ Progress is unique per enrollment and lesson. Updating all lessons to completed
 sets the enrollment's completion state; uncompleting a lesson recalculates it.
 Course catalog and detail responses include the average rating and review count.
 
+## Quizzes and assignments API
+
+Assessment endpoints use the `/api/v1/courses/` namespace and JWT
+authentication. Learners must be enrolled in the associated course. Only the
+verified course owner or an admin can author or change assessment content.
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| GET, POST | `/api/v1/courses/{course_slug}/quizzes/` | Enrolled students GET; owner/admin POST | List course quizzes or create a quiz (`title`, `description`, `max_attempts`). |
+| GET, PATCH, PUT, DELETE | `/api/v1/courses/quizzes/{id}/` | Enrolled student GET; owner/admin writes | Read or manage a quiz. Student responses never include correct-answer flags. |
+| GET, POST | `/api/v1/courses/quizzes/{quiz_id}/questions/` | Enrolled students GET; owner/admin POST | List quiz questions or create a question (`prompt`, `order`, `points`, `allow_multiple`). |
+| GET, PATCH, PUT, DELETE | `/api/v1/courses/questions/{id}/` | Enrolled student GET; owner/admin writes | Read or manage a question. |
+| GET, POST | `/api/v1/courses/questions/{question_id}/choices/` | Enrolled students GET; owner/admin POST | List answer choices or create a choice (`text`, `is_correct`, `order`). Correctness is omitted from learner responses. |
+| GET, PATCH, PUT, DELETE | `/api/v1/courses/choices/{id}/` | Enrolled student GET; owner/admin writes | Read or manage a choice. Correctness is omitted from learner responses. |
+| GET, POST | `/api/v1/courses/quizzes/{quiz_id}/attempts/` | Enrolled student; owner/admin may view results | Submit `answers` as question IDs and selected choice IDs. The server grades and stores the score; client-supplied scores are ignored. |
+| GET | `/api/v1/courses/quiz-attempts/{id}/` | Attempt owner, course owner, or admin | Retrieve a stored result without answer-key data. |
+| GET, POST | `/api/v1/courses/{course_slug}/assignments/` | Enrolled students GET; owner/admin POST | List or create course assignments (`title`, `description`, optional `due_at`, `max_points`). |
+| GET, PATCH, PUT, DELETE | `/api/v1/courses/assignments/{id}/` | Enrolled student GET; owner/admin writes | Read or manage an assignment. |
+| GET, POST | `/api/v1/courses/assignments/{assignment_id}/submissions/` | Enrolled student; owner/admin can list | Submit `content` once before the deadline or list submissions. |
+| GET, PATCH, PUT | `/api/v1/courses/submissions/{id}/` | Submitting student GET; owner/admin can read and grade | Grade with `grade` and `feedback`; grader and grading time are recorded by the server. |
+
+Quiz scores use question points and exact choice-set matching for multiple-answer
+questions. Attempt limits, answer ownership, assignment deadlines, one submission
+per student/assignment, and grade maximums are validated server-side.
+
 ### Production environment variables
 
 Use the settings below in the environment that runs the app:
