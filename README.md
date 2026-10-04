@@ -156,6 +156,32 @@ Quiz scores use question points and exact choice-set matching for multiple-answe
 questions. Attempt limits, answer ownership, assignment deadlines, one submission
 per student/assignment, and grade maximums are validated server-side.
 
+## AI learning path API
+
+`POST /api/v1/ai-path/` is public and limited to 5 requests per hour. Submit
+`goals`, `current_skill_level` (`beginner`, `intermediate`, or `advanced`),
+`interests`, and `hours_per_week`; `name`, `email`, and `phone` are optional lead
+fields. The optional `website` honeypot must be empty. The service builds its
+prompt from the current public course catalogue and only returns course IDs that
+still exist in that catalogue. The model must return a JSON object containing
+`summary` and `recommendations` entries with `course_id` and `reason`; at most
+five recommendations are accepted.
+
+`GET /api/v1/ai-path/responses/` is paginated and staff-only. It includes stored
+questionnaires, optional lead data, recommendation results, provider/model
+provenance, and processing status. Public results do not expose lead data.
+Controlled errors include `AI_NOT_CONFIGURED` (503), `AI_PROVIDER_TIMEOUT`
+(504), `AI_PROVIDER_ERROR` (502), and `AI_INVALID_RESPONSE` (502).
+
+Configure the following deployment environment variables to enable the
+OpenAI-compatible provider adapter; no provider credentials are committed:
+
+- `AI_PROVIDER=openai_compatible`
+- `AI_API_KEY=<provider-issued-secret>`
+- `AI_MODEL=<provider-model-name>`
+- `AI_API_BASE_URL=<provider-compatible-v1-base-url>`
+- `AI_REQUEST_TIMEOUT_SECONDS=15` (optional; defaults to 15)
+
 ### Production environment variables
 
 Use the settings below in the environment that runs the app:
@@ -172,7 +198,11 @@ Use the settings below in the environment that runs the app:
 - SECURE_HSTS_SECONDS=31536000
 - SECURE_PROXY_SSL_HEADER=HTTP_X_FORWARDED_PROTO,https
 - PAYMENT_PROVIDER_API_KEY=your-payment-provider-key
+- AI_PROVIDER=openai_compatible
 - AI_API_KEY=your-ai-service-key
+- AI_MODEL=your-provider-model-name
+- AI_API_BASE_URL=https://your-provider.example/v1
+- AI_REQUEST_TIMEOUT_SECONDS=15
 - FRONTEND_URL=https://your-domain.com
 - DEFAULT_FROM_EMAIL=noreply@your-domain.com
 - ACCESS_TOKEN_LIFETIME_MINUTES=15
