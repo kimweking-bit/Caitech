@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'courses',
     'payments',
     'ai_path',
+    'site_content',
 ]
 
 MIDDLEWARE = [
@@ -123,6 +124,7 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
 
 EMAIL_BACKEND = env(
     'EMAIL_BACKEND',
@@ -140,6 +142,8 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'login': '5/minute',
         'password_reset': '3/hour',
+        'newsletter': '5/hour',
+        'contact': '5/hour',
     },
 }
 

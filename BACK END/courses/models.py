@@ -14,6 +14,21 @@ class Category(models.Model):
 
 
 class Course(models.Model):
+    class CourseType(models.TextChoices):
+        DIPLOMA = 'diploma', 'Diploma'
+        CERTIFICATE = 'certificate', 'Certificate'
+        SHORT_COURSE = 'short_course', 'Short course'
+
+    class DeliveryMode(models.TextChoices):
+        ONLINE = 'online', 'Online'
+        PHYSICAL = 'physical', 'Physical'
+        RECORDED = 'recorded', 'Recorded'
+
+    class IntakeStatus(models.TextChoices):
+        ONGOING = 'ongoing', 'Ongoing'
+        UPCOMING = 'upcoming', 'Upcoming'
+        CLOSED = 'closed', 'Closed'
+
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     description = models.TextField()
@@ -26,6 +41,21 @@ class Course(models.Model):
     )
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     is_free = models.BooleanField(default=False)
+    course_type = models.CharField(
+        max_length=20,
+        choices=CourseType.choices,
+        blank=True,
+        default='',
+    )
+    duration = models.CharField(max_length=100, blank=True)
+    delivery_modes = models.JSONField(default=list, blank=True)
+    intake_status = models.CharField(
+        max_length=20,
+        choices=IntakeStatus.choices,
+        blank=True,
+        default='',
+    )
+    whatsapp_inquiry_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

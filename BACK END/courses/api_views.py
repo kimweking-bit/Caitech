@@ -2,7 +2,8 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from django.db import IntegrityError, transaction
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, Q, TextField
+from django.db.models.functions import Cast
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, generics, permissions
@@ -87,6 +88,20 @@ class CourseCatalogV1(generics.ListCreateAPIView):
         category = params.get('category')
         if category:
             queryset = queryset.filter(category__slug=category)
+
+        course_type = params.get('course_type')
+        if course_type:
+            if course_type not in Course.CourseType.values:
+                raise ValidationError({'course_type': 'Choose a valid course type.'})
+            queryset = queryset.filter(course_type=course_type)
+
+        delivery_mode = params.get('delivery_mode')
+        if delivery_mode:
+            if delivery_mode not in Course.DeliveryMode.values:
+                raise ValidationError({'delivery_mode': 'Choose a valid delivery mode.'})
+            queryset = queryset.annotate(
+                delivery_modes_text=Cast('delivery_modes', output_field=TextField())
+            ).filter(delivery_modes_text__icontains=f'"{delivery_mode}"')
 
         is_free = params.get('is_free')
         if is_free is not None:
