@@ -142,3 +142,21 @@ class CanReadResourceAndManageOwner(BasePermission):
         if request.method in SAFE_METHODS:
             return CanAccessResource().has_object_permission(request, view, resource)
         return user_can_manage_course(request.user, resource.lesson.course)
+
+
+class IsReviewOwnerOrAdmin(BasePermission):
+    message = "Only the review author or an admin can change this review."
+
+    def has_permission(self, request, view):
+        return request.method in SAFE_METHODS or bool(
+            request.user and request.user.is_authenticated
+        )
+
+    def has_object_permission(self, request, view, review):
+        if request.method in SAFE_METHODS:
+            return True
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and (request.user.is_staff or review.student_id == request.user.pk)
+        )

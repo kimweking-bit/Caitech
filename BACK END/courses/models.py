@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -99,3 +100,67 @@ class Enrollment(models.Model):
 
     def __str__(self):
         return f"{self.student} -> {self.course}"
+
+
+class LessonProgress(models.Model):
+    enrollment = models.ForeignKey(
+        Enrollment,
+        on_delete=models.CASCADE,
+        related_name='lesson_progress',
+    )
+    lesson = models.ForeignKey(
+        Lesson,
+        on_delete=models.CASCADE,
+        related_name='enrollment_progress',
+    )
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['lesson__section__order', 'lesson__order', 'lesson_id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['enrollment', 'lesson'],
+                name='unique_progress_per_enrollment_lesson',
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.completed:
+            self.completed_at = self.completed_at or timezone.now()
+        else:
+            self.completed_at = None
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.enrollment} - {self.lesson}"
+
+
+class CourseReview(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='reviews')
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='course_reviews',
+    )
+    rating = models.PositiveSmallIntegerField()
+    comment = models.TextField(blank=True, max_length=5000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['course', 'student'],
+                name='unique_review_per_course_student',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(rating__gte=1, rating__lte=5),
+                name='course_review_rating_between_1_and_5',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.student} - {self.course} ({self.rating}/5)"

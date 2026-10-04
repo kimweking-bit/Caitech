@@ -9,7 +9,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Category, Course, Enrollment, Lesson, Section
+from .models import Category, Course, CourseReview, Enrollment, Lesson, LessonProgress, Section
 
 
 User = get_user_model()
@@ -611,3 +611,204 @@ class Phase2ResourceApiTests(APITestCase):
 		response = self.client.get(reverse('lesson-detail', kwargs={'pk': self.protected.pk}))
 
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class Phase3ProgressDashboardApiTests(APITestCase):
+	def setUp(self):
+		self.student = User.objects.create_user(username='progress-student', password=PASSWORD)
+		self.other_student = User.objects.create_user(username='progress-other', password=PASSWORD)
+		self.instructor = User.objects.create_user(
+			username='progress-instructor', password=PASSWORD,
+			is_student=False, is_instructor=True, is_verified_instructor=True,
+		)
+		category = Category.objects.create(name='Progress', slug='progress')
+		self.course = Course.objects.create(
+			title='Progress Course', slug='progress-course', description='Progress tracking',
+			category=category, instructor=self.instructor, is_free=True,
+		)
+		self.other_course = Course.objects.create(
+			title='Other Course', slug='other-course', description='Separate course',
+			category=category, instructor=self.instructor, is_free=True,
+		)
+		self.enrollment = Enrollment.objects.create(student=self.student, course=self.course)
+		self.other_enrollment = Enrollment.objects.create(student=self.other_student, course=self.course)
+		self.lessons = [
+			Lesson.objects.create(course=self.course, title=f'Lesson {order}', order=order)
+			for order in (1, 2, 3)
+		]
+		self.foreign_lesson = Lesson.objects.create(
+			course=self.other_course, title='Foreign lesson', order=1
+		)
+		self.progress_url = reverse(
+			'api-v1-enrollment-progress', kwargs={'enrollment_pk': self.enrollment.pk}
+		)
+
+	def test_progress_updates_percentage_and_completion_authoritatively(self):
+		self.client.force_authenticate(self.student)
+		initial = self.client.get(self.progress_url)
+		self.assertEqual(initial.status_code, status.HTTP_200_OK)
+		self.assertEqual(initial.data['progress_percentage'], 0)
+		self.assertFalse(self.enrollment.completed)
+
+		for lesson in self.lessons:
+			response = self.client.post(
+				self.progress_url,
+				{'lesson': lesson.pk, 'completed': True},
+				format='json',
+			)
+			self.assertEqual(response.status_code, status.HTTP_200_OK)
+			self.assertIsNotNone(response.data['completed_at'])
+
+		completed = self.client.get(self.progress_url)
+		self.enrollment.refresh_from_db()
+		self.assertEqual(completed.data['completed_lessons'], 3)
+		self.assertEqual(completed.data['progress_percentage'], 100)
+		self.assertTrue(self.enrollment.completed)
+		self.assertEqual(LessonProgress.objects.filter(enrollment=self.enrollment).count(), 3)
+
+		self.client.post(
+			self.progress_url,
+			{'lesson': self.lessons[0].pk, 'completed': False},
+			format='json',
+		)
+		self.enrollment.refresh_from_db()
+		self.assertFalse(self.enrollment.completed)
+		self.assertIsNone(
+			LessonProgress.objects.get(enrollment=self.enrollment, lesson=self.lessons[0]).completed_at
+		)
+
+	def test_student_cannot_read_or_write_another_students_progress(self):
+		self.client.force_authenticate(self.other_student)
+		self.assertEqual(self.client.get(self.progress_url).status_code, status.HTTP_404_NOT_FOUND)
+		self.assertEqual(
+			self.client.post(
+				self.progress_url,
+				{'lesson': self.lessons[0].pk, 'completed': True},
+				format='json',
+			).status_code,
+			status.HTTP_404_NOT_FOUND,
+		)
+
+	def test_progress_rejects_lesson_outside_enrolled_course(self):
+		self.client.force_authenticate(self.student)
+
+		response = self.client.post(
+			self.progress_url,
+			{'lesson': self.foreign_lesson.pk, 'completed': True},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertFalse(
+			LessonProgress.objects.filter(enrollment=self.enrollment).exists()
+		)
+
+	def test_dashboard_returns_only_students_courses_progress_and_certificate_placeholder(self):
+		self.client.force_authenticate(self.student)
+		self.client.post(
+			self.progress_url,
+			{'lesson': self.lessons[0].pk, 'completed': True},
+			format='json',
+		)
+
+		response = self.client.get(reverse('api-v1-student-dashboard'))
+
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertEqual(len(response.data['my_courses']), 1)
+		course_data = response.data['my_courses'][0]
+		self.assertEqual(course_data['course_id'], self.course.pk)
+		self.assertEqual(course_data['completed_lessons'], 1)
+		self.assertEqual(course_data['progress_percentage'], 33.33)
+		self.assertEqual(response.data['certificates'], [])
+		self.assertEqual(response.data['pagination']['count'], 1)
+
+	def test_dashboard_requires_authentication(self):
+		response = self.client.get(reverse('api-v1-student-dashboard'))
+		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class Phase3CourseReviewApiTests(APITestCase):
+	def setUp(self):
+		self.student = User.objects.create_user(username='review-student', password=PASSWORD)
+		self.other_student = User.objects.create_user(username='review-other', password=PASSWORD)
+		self.instructor = User.objects.create_user(
+			username='review-instructor', password=PASSWORD,
+			is_student=False, is_instructor=True, is_verified_instructor=True,
+		)
+		category = Category.objects.create(name='Reviews', slug='reviews')
+		self.course = Course.objects.create(
+			title='Review Course', slug='review-course', description='Review test course',
+			category=category, instructor=self.instructor, is_free=True,
+		)
+		self.enrollment = Enrollment.objects.create(student=self.student, course=self.course)
+		self.reviews_url = reverse(
+			'api-v1-course-reviews', kwargs={'course_slug': self.course.slug}
+		)
+
+	def test_enrolled_student_can_create_and_list_review(self):
+		self.client.force_authenticate(self.student)
+
+		created = self.client.post(
+			self.reviews_url,
+			{'rating': 5, 'comment': 'Excellent course.'},
+			format='json',
+		)
+		listed = self.client.get(self.reviews_url)
+
+		self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+		self.assertEqual(created.data['rating'], 5)
+		self.assertEqual(listed.status_code, status.HTTP_200_OK)
+		self.assertEqual(listed.data['count'], 1)
+		self.assertEqual(CourseReview.objects.filter(course=self.course, student=self.student).count(), 1)
+
+	def test_unenrolled_student_cannot_review_but_public_can_read(self):
+		self.client.force_authenticate(self.other_student)
+		response = self.client.post(
+			self.reviews_url, {'rating': 4, 'comment': 'Good.'}, format='json'
+		)
+		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+		self.client.force_authenticate(None)
+		self.assertEqual(self.client.get(self.reviews_url).status_code, status.HTTP_200_OK)
+		self.assertEqual(
+			self.client.post(
+				self.reviews_url, {'rating': 4, 'comment': 'Good.'}, format='json'
+			).status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+
+	def test_student_can_submit_only_one_review_per_course(self):
+		self.client.force_authenticate(self.student)
+		payload = {'rating': 4, 'comment': 'Good course.'}
+		first = self.client.post(self.reviews_url, payload, format='json')
+		second = self.client.post(self.reviews_url, payload, format='json')
+
+		self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+		self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertEqual(CourseReview.objects.filter(course=self.course).count(), 1)
+
+	def test_rating_validation_and_aggregate(self):
+		self.client.force_authenticate(self.student)
+		invalid = self.client.post(
+			self.reviews_url, {'rating': 6, 'comment': 'Invalid.'}, format='json'
+		)
+		self.assertEqual(invalid.status_code, status.HTTP_400_BAD_REQUEST)
+
+		CourseReview.objects.create(course=self.course, student=self.student, rating=4)
+		course = self.client.get(reverse('api-v1-course-detail', kwargs={'slug': self.course.slug}))
+		self.assertEqual(course.data['average_rating'], 4.0)
+		self.assertEqual(course.data['review_count'], 1)
+
+	def test_only_review_owner_or_admin_can_modify_review(self):
+		review = CourseReview.objects.create(course=self.course, student=self.student, rating=4)
+		review_url = reverse('api-v1-review-detail', kwargs={'pk': review.pk})
+		self.client.force_authenticate(self.other_student)
+		self.assertEqual(
+			self.client.patch(review_url, {'rating': 2}, format='json').status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+		self.client.force_authenticate(self.student)
+		self.assertEqual(
+			self.client.patch(review_url, {'rating': 5}, format='json').status_code,
+			status.HTTP_200_OK,
+		)

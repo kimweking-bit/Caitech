@@ -1,18 +1,31 @@
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
+from django.db import IntegrityError, transaction
+from django.db.models import Avg, Count, Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, generics, permissions
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Category, Course, CourseResource, Lesson, Section
+from .models import (
+    Category,
+    Course,
+    CourseResource,
+    CourseReview,
+    Enrollment,
+    Lesson,
+    LessonProgress,
+    Section,
+)
 from .permissions import (
     CanReadLessonAndManageOwner,
     CanReadResourceAndManageOwner,
+    IsReviewOwnerOrAdmin,
     IsAdminOrReadOnly,
     IsCourseOwnerOrStaffOrReadOnly,
     user_can_access_course,
@@ -20,6 +33,9 @@ from .permissions import (
 )
 from .serializers import (
     CourseResourceSerializer,
+    CourseReviewSerializer,
+    DashboardEnrollmentSerializer,
+    LessonProgressSerializer,
     SectionSerializer,
     VersionedCategorySerializer,
     VersionedCourseSerializer,
@@ -63,6 +79,9 @@ class CourseCatalogV1(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = Course.objects.select_related('category', 'instructor').prefetch_related(
             'lessons', 'sections'
+        ).annotate(
+            average_rating=Avg('reviews__rating'),
+            review_count=Count('reviews', distinct=True),
         )
         params = self.request.query_params
         category = params.get('category')
@@ -99,6 +118,9 @@ class CourseCatalogV1(generics.ListCreateAPIView):
 class CourseDetailV1(generics.RetrieveUpdateDestroyAPIView):
     queryset = Course.objects.select_related('category', 'instructor').prefetch_related(
         'lessons', 'sections'
+    ).annotate(
+        average_rating=Avg('reviews__rating'),
+        review_count=Count('reviews', distinct=True),
     )
     serializer_class = VersionedCourseSerializer
     permission_classes = [IsCourseOwnerOrStaffOrReadOnly]
@@ -216,3 +238,120 @@ class ResourceDownloadV1(APIView):
         from .permissions import CanAccessResource
 
         return [CanAccessResource()]
+
+
+class EnrollmentProgressV1(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_enrollment(self):
+        return get_object_or_404(
+            Enrollment.objects.select_related('course'),
+            pk=self.kwargs['enrollment_pk'],
+            student=self.request.user,
+        )
+
+    def get(self, request, enrollment_pk):
+        enrollment = self.get_enrollment()
+        progress = enrollment.lesson_progress.select_related('lesson', 'lesson__section')
+        total = enrollment.course.lessons.count()
+        completed = progress.filter(completed=True).count()
+        return Response({
+            'enrollment_id': enrollment.pk,
+            'course_id': enrollment.course_id,
+            'total_lessons': total,
+            'completed_lessons': completed,
+            'progress_percentage': round(completed * 100 / total, 2) if total else 0,
+            'lessons': LessonProgressSerializer(progress, many=True).data,
+        })
+
+    def post(self, request, enrollment_pk):
+        enrollment = self.get_enrollment()
+        serializer = LessonProgressSerializer(
+            data=request.data,
+            context={'enrollment': enrollment},
+        )
+        serializer.is_valid(raise_exception=True)
+        lesson = serializer.validated_data['lesson']
+        completed = serializer.validated_data.get('completed', False)
+        with transaction.atomic():
+            progress, _ = LessonProgress.objects.update_or_create(
+                enrollment=enrollment,
+                lesson=lesson,
+                defaults={'completed': completed},
+            )
+            total = enrollment.course.lessons.count()
+            completed_count = enrollment.lesson_progress.filter(completed=True).count()
+            enrollment.completed = total > 0 and completed_count == total
+            enrollment.save(update_fields=['completed'])
+        return Response(
+            LessonProgressSerializer(progress).data,
+            status=200,
+        )
+
+
+class StudentDashboardV1(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        enrollments = Enrollment.objects.filter(student=request.user).select_related(
+            'course'
+        ).annotate(
+            total_lessons=Count('course__lessons', distinct=True),
+            completed_lessons=Count(
+                'lesson_progress',
+                filter=Q(lesson_progress__completed=True),
+                distinct=True,
+            ),
+        ).order_by('-enrolled_at', '-pk')
+        paginator = CourseApiPagination()
+        page = paginator.paginate_queryset(enrollments, request, view=self)
+        return Response({
+            'my_courses': DashboardEnrollmentSerializer(page, many=True).data,
+            'certificates': [],
+            'pagination': {
+                'count': paginator.page.paginator.count,
+                'next': paginator.get_next_link(),
+                'previous': paginator.get_previous_link(),
+            },
+        })
+
+
+class CourseReviewListCreateV1(generics.ListCreateAPIView):
+    serializer_class = CourseReviewSerializer
+    permission_classes = [permissions.AllowAny]
+    pagination_class = CourseApiPagination
+
+    def get_course(self):
+        return get_object_or_404(Course, slug=self.kwargs['course_slug'])
+
+    def get_queryset(self):
+        return CourseReview.objects.filter(
+            course__slug=self.kwargs['course_slug']
+        ).select_related('student')
+
+    def create(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            raise PermissionDenied('Authentication is required to review a course.')
+        course = self.get_course()
+        if not Enrollment.objects.filter(student=request.user, course=course).exists():
+            raise PermissionDenied('Only enrolled students can review this course.')
+        if CourseReview.objects.filter(student=request.user, course=course).exists():
+            raise ValidationError({'detail': 'You have already reviewed this course.'})
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            with transaction.atomic():
+                review = serializer.save(student=request.user, course=course)
+        except IntegrityError as exc:
+            raise ValidationError({'detail': 'You have already reviewed this course.'}) from exc
+        return Response(
+            self.get_serializer(review).data,
+            status=201,
+        )
+
+
+class CourseReviewDetailV1(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CourseReview.objects.select_related('student', 'course')
+    serializer_class = CourseReviewSerializer
+    permission_classes = [IsReviewOwnerOrAdmin]
