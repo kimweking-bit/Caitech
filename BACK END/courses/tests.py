@@ -6,7 +6,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Category, Course, Enrollment
+from .models import Category, Course, Enrollment, Lesson
 
 
 User = get_user_model()
@@ -23,6 +23,7 @@ class CourseApiTests(APITestCase):
 			description='An introduction to Python.',
 			category=self.category,
 			instructor=self.instructor,
+			is_free=True,
 		)
 
 	def create_instructor(self, username, verified=False):
@@ -171,6 +172,7 @@ class EnrollmentApiTests(APITestCase):
 			description='Learn data fundamentals.',
 			category=category,
 			instructor=instructor,
+			is_free=True,
 		)
 		self.enroll_url = reverse('course-enroll')
 
@@ -200,6 +202,38 @@ class EnrollmentApiTests(APITestCase):
 		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 		self.assertEqual(Enrollment.objects.filter(student=self.student, course=self.course).count(), 1)
 
+	def test_student_cannot_enroll_in_paid_course_without_payment(self):
+		paid_course = Course.objects.create(
+			title='Paid Data Course',
+			slug='paid-data-course',
+			description='A paid course.',
+			category=self.course.category,
+			instructor=self.course.instructor,
+			price='50.00',
+			is_free=False,
+		)
+		self.client.force_authenticate(self.student)
+
+		response = self.client.post(
+			self.enroll_url,
+			{'course': paid_course.pk},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertFalse(Enrollment.objects.filter(student=self.student, course=paid_course).exists())
+
+		paid_course.is_free = True
+		paid_course.save(update_fields=['is_free'])
+		misconfigured_response = self.client.post(
+			self.enroll_url,
+			{'course': paid_course.pk},
+			format='json',
+		)
+
+		self.assertEqual(misconfigured_response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertFalse(Enrollment.objects.filter(student=self.student, course=paid_course).exists())
+
 	def test_integrity_error_during_enrollment_returns_validation_error(self):
 		self.client.force_authenticate(self.student)
 
@@ -227,3 +261,63 @@ class EnrollmentApiTests(APITestCase):
 		)
 
 		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class LessonAccessTests(APITestCase):
+	def setUp(self):
+		self.instructor = User.objects.create_user(
+			username='lesson-instructor',
+			password=PASSWORD,
+			is_student=False,
+			is_instructor=True,
+			is_verified_instructor=True,
+		)
+		self.student = User.objects.create_user(username='lesson-student', password=PASSWORD)
+		self.category = Category.objects.create(name='Security', slug='security')
+		self.course = Course.objects.create(
+			title='Secure Course',
+			slug='secure-course',
+			description='A course with protected lessons.',
+			category=self.category,
+			instructor=self.instructor,
+			is_free=False,
+			price='25.00',
+		)
+		self.preview = Lesson.objects.create(
+			course=self.course,
+			title='Preview lesson',
+			video_url='https://example.com/preview',
+			is_preview=True,
+		)
+		self.protected = Lesson.objects.create(
+			course=self.course,
+			title='Protected lesson',
+			video_url='https://example.com/protected',
+			is_preview=False,
+		)
+
+	def test_preview_lesson_is_public(self):
+		response = self.client.get(reverse('lesson-detail', kwargs={'pk': self.preview.pk}))
+
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+	def test_unenrolled_student_cannot_fetch_protected_lesson(self):
+		self.client.force_authenticate(self.student)
+
+		response = self.client.get(reverse('lesson-detail', kwargs={'pk': self.protected.pk}))
+
+		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+	def test_course_detail_hides_protected_lessons_from_public_users(self):
+		response = self.client.get(reverse('course-detail', kwargs={'slug': self.course.slug}))
+
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertEqual([lesson['id'] for lesson in response.data['lessons']], [self.preview.pk])
+
+	def test_enrolled_student_can_fetch_protected_lesson(self):
+		Enrollment.objects.create(student=self.student, course=self.course)
+		self.client.force_authenticate(self.student)
+
+		response = self.client.get(reverse('lesson-detail', kwargs={'pk': self.protected.pk}))
+
+		self.assertEqual(response.status_code, status.HTTP_200_OK)

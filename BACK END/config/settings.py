@@ -127,6 +127,8 @@ EMAIL_BACKEND = env(
     'EMAIL_BACKEND',
     default='django.core.mail.backends.console.EmailBackend',
 )
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@caitech.local')
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:3000')
 
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -134,6 +136,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_THROTTLE_RATES': {
+        'login': '5/minute',
+        'password_reset': '3/hour',
+    },
 }
 
 SIMPLE_JWT = {

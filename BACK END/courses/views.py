@@ -3,7 +3,7 @@ from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from .models import Category, Course, Lesson, Enrollment
 from .serializers import CategorySerializer, CourseSerializer, LessonSerializer, EnrollmentSerializer
-from .permissions import IsVerifiedInstructor
+from .permissions import CanAccessLesson, IsVerifiedInstructor
 
 
 class CategoryListView(generics.ListAPIView):
@@ -34,6 +34,7 @@ class CourseCreateView(generics.CreateAPIView):
 class LessonDetailView(generics.RetrieveAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+    permission_classes = [CanAccessLesson]
 
 
 class EnrollmentCreateView(generics.CreateAPIView):
@@ -45,6 +46,8 @@ class EnrollmentCreateView(generics.CreateAPIView):
         error = {'detail': 'You are already enrolled in this course.'}
         if Enrollment.objects.filter(student=self.request.user, course=course).exists():
             raise ValidationError(error)
+        if not course.is_free or course.price > 0:
+            raise ValidationError({'detail': 'Payment is required before enrolling in this course.'})
 
         try:
             with transaction.atomic():
