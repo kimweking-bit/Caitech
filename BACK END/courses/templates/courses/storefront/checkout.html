@@ -1,0 +1,41 @@
+{% extends 'courses/storefront/base.html' %}
+{% block title %}Checkout | CAI Technologies{% endblock %}
+{% block content %}
+<section class="page-width commerce-page">
+    <a class="back-link" href="{% url 'storefront-cart' %}">← Back to cart</a>
+    <div class="commerce-heading"><div><p class="eyebrow eyebrow-dark">SECURE CHECKOUT</p><h1>Almost there.</h1></div><span class="checkout-step">01 <i></i> 02 <i></i> 03</span></div>
+    {% if form_errors %}<div class="error-panel" role="alert"><strong>We couldn’t start checkout.</strong><ul>{% for error in form_errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+    <div class="commerce-layout checkout-layout">
+        <form class="checkout-form" method="post" data-disable-on-submit>
+            {% csrf_token %}
+            <section class="form-section"><p class="eyebrow eyebrow-dark">01 · CUSTOMER DETAILS</p><h2>Where should we reach you?</h2>
+                <div class="form-grid">
+                    <label class="form-field form-field-wide">Full name<input name="full_name" value="{{ form_name }}" autocomplete="name" required maxlength="200"></label>
+                    <label class="form-field">Email address<input type="email" name="email" value="{{ form_email }}" autocomplete="email" required></label>
+                    <label class="form-field">Phone number<input type="tel" name="phone_number" value="{{ form_phone }}" autocomplete="tel" placeholder="07XX XXX XXX" required></label>
+                </div>
+            </section>
+            <section class="form-section payment-method-section"><p class="eyebrow eyebrow-dark">02 · PAYMENT METHOD</p><h2>Pay securely with M-Pesa.</h2>
+                <label class="payment-choice"><input type="radio" name="payment_method" value="mpesa" checked><span class="mpesa-mark">M</span><span><strong>M-Pesa STK Push</strong><small>A payment prompt will be sent to your phone.</small></span><span class="choice-check"></span></label>
+                <p class="provider-availability">Card and PayPal checkout are not enabled until a live provider integration is configured.</p>
+            </section>
+            <button class="button button-green button-full pay-button" type="submit" {% if not can_checkout %}disabled{% endif %}>
+                Pay {{ currency }} {{ total|floatformat:2 }} <span aria-hidden="true">→</span>
+            </button>
+            <p class="secure-note checkout-security">Your order is confirmed only after the payment provider verifies the transaction.</p>
+        </form>
+        <aside class="summary-panel checkout-summary">
+            <p class="eyebrow eyebrow-dark">ORDER SUMMARY</p><h2>{{ cart_courses|length }} course{{ cart_courses|length|pluralize }}</h2>
+            <div class="checkout-items">{% for course in cart_courses %}<div class="checkout-item"><span>{{ course.title }}</span><strong>{% if course.price == 0 %}Free{% else %}{{ currency }} {{ course.price|floatformat:2 }}{% endif %}</strong></div>{% endfor %}</div>
+            {% if coupon_code %}<p class="applied-code">Code applied · {{ coupon_code }}</p>{% endif %}
+            <dl class="totals-list">
+                <div><dt>Subtotal</dt><dd>{{ currency }} {{ subtotal|floatformat:2 }}</dd></div>
+                <div><dt>Discount</dt><dd class="discount-amount">− {{ currency }} {{ discount_amount|floatformat:2 }}</dd></div>
+                <div><dt>Fees</dt><dd>{{ currency }} {{ fee_amount|floatformat:2 }}</dd></div>
+                <div class="total-row"><dt>Total due</dt><dd>{{ currency }} {{ total|floatformat:2 }}</dd></div>
+            </dl>
+            <p class="summary-footnote">Prices and discounts are recalculated by CAI Technologies when your order is created.</p>
+        </aside>
+    </div>
+</section>
+{% endblock %}

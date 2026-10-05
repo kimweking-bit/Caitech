@@ -1,6 +1,10 @@
 from django.urls import path
 
 from .views import (
+    CartCouponV1,
+    CartCheckoutV1,
+    CartItemDetailV1,
+    CartV1,
     HostedProviderCallbackV1,
     MpesaCallbackV1,
     OrderCreateV1,
@@ -9,6 +13,10 @@ from .views import (
 )
 
 urlpatterns = [
+    path('cart/', CartV1.as_view(), name='payments-cart'),
+    path('cart/checkout/', CartCheckoutV1.as_view(), name='payments-cart-checkout'),
+    path('cart/coupon/', CartCouponV1.as_view(), name='payments-cart-coupon'),
+    path('cart/items/<int:course_id>/', CartItemDetailV1.as_view(), name='payments-cart-item-detail'),
     path('orders/', OrderCreateV1.as_view(), name='payments-order-create'),
     path(
         'orders/<uuid:order_reference>/initiate/',

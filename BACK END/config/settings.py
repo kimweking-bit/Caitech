@@ -176,6 +176,8 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=False)
 EMAIL_USE_SSL = env.bool('EMAIL_USE_SSL', default=False)
 FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:3000')
+SITE_URL = env('SITE_URL', default='http://localhost:8000')
+LOGIN_URL = '/account/login/'
 
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -299,5 +301,6 @@ SPECTACULAR_SETTINGS = {
         'PaymentStatusEnum': 'payments.models.PaymentTransaction.Status',
         'PaymentCallbackStatusEnum': 'payments.models.PaymentTransaction.CallbackStatus',
         'PaymentProviderEnum': 'payments.models.PaymentTransaction.Provider',
+        'CourseCurrencyEnum': 'courses.models.Course.Currency',
     },
 }

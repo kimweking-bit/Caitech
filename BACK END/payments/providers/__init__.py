@@ -7,16 +7,20 @@ from .hosted import HostedCheckoutProvider
 from .mpesa import MpesaProvider
 
 
-def get_provider(method):
+def get_provider(method, *, for_callback=False):
     if method == 'mpesa':
         return MpesaProvider()
     if method == 'card':
+        if not for_callback:
+            raise ProviderError('Hosted card checkout is not enabled until a real provider adapter is configured.')
         return HostedCheckoutProvider(
             method,
             settings.CARD_HOSTED_CHECKOUT_URL,
             settings.CARD_WEBHOOK_SECRET,
         )
     if method == 'paypal':
+        if not for_callback:
+            raise ProviderError('PayPal checkout is not enabled until a real provider adapter is configured.')
         return HostedCheckoutProvider(
             method,
             settings.PAYPAL_HOSTED_CHECKOUT_URL,

@@ -1,0 +1,21 @@
+{% extends 'courses/storefront/base.html' %}
+{% block title %}Order {{ order.reference }} | CAI Technologies{% endblock %}
+{% block content %}
+<section class="page-width return-page" data-payment-status data-poll-url="{% url 'storefront-payment-status' order.reference %}">
+    <div class="status-orbit" aria-hidden="true"><span></span></div>
+    <p class="eyebrow eyebrow-dark" id="status-kicker">ORDER {{ order.reference|stringformat:'s'|slice:':8'|upper }}</p>
+    <h1 id="payment-heading">{% if order.status == 'paid' %}Payment successful.{% elif order.status == 'failed' %}Payment failed.{% elif order.status == 'cancelled' %}Payment cancelled.{% elif order.status == 'expired' %}Order expired.{% else %}Check your phone.{% endif %}</h1>
+    <p class="return-copy" id="payment-message">{% if order.status == 'paid' %}Your payment is confirmed and your course access is ready.{% elif order.status == 'failed' %}The payment could not be confirmed. Your courses remain locked; you can start a new checkout from your cart.{% elif order.status == 'cancelled' %}The payment was cancelled. You have not been enrolled.{% elif order.status == 'expired' %}This order expired before payment confirmation. Please create a new order.{% else %}Approve the M-Pesa prompt on your phone. This page will update when CAI Technologies receives confirmation.{% endif %}</p>
+    <div class="order-receipt">
+        <div><span>Order</span><strong id="order-number">CAI-{{ order.reference|stringformat:'s'|slice:':8'|upper }}</strong></div>
+        <div><span>Courses</span><strong>{% for item in order.items.all %}{{ item.course_title }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong></div>
+        <div><span>Amount</span><strong>{{ order.currency }} {{ order.total|floatformat:2 }}</strong></div>
+        <div><span>Status</span><strong id="payment-status-label">{{ order.get_status_display }}</strong></div>
+    </div>
+    <div class="return-actions">
+        <a class="button button-green" id="go-to-courses" href="{% url 'storefront-dashboard' %}" {% if order.status != 'paid' %}hidden{% endif %}>Go to my courses</a>
+        <a class="button button-outline" href="{% url 'storefront-catalog' %}">Continue browsing</a>
+    </div>
+    <p class="polling-note" id="polling-note" {% if order.status != 'pending' and order.status != 'draft' %}hidden{% endif %}>Waiting for secure payment confirmation…</p>
+</section>
+{% endblock %}

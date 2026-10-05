@@ -7,6 +7,7 @@ from django.db.models import Avg, Count, OuterRef, Q, Subquery, Sum, TextField
 from django.db.models.functions import Cast
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import filters, generics, permissions
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -17,6 +18,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 
 from accounts.services import send_notification_email
+from payments.models import Order, OrderItem
 
 from .models import (
     Category,
@@ -100,7 +102,21 @@ class CourseCatalogV1(generics.ListCreateAPIView):
             review_count=Count('reviews', distinct=True),
             enrolled_count=Count('enrollments', distinct=True),
             total_duration_minutes=Subquery(lesson_duration),
+            active_order_reservations=Count(
+                'order_items',
+                filter=Q(
+                    order_items__order__status__in=['draft', 'pending'],
+                    order_items__order__expires_at__gt=timezone.now(),
+                ),
+                distinct=True,
+            ),
         )
+        user = self.request.user
+        if not user.is_staff:
+            visible_courses = Q(is_published=True)
+            if user.is_authenticated and getattr(user, 'is_verified_instructor', False):
+                visible_courses |= Q(instructor_id=user.pk)
+            queryset = queryset.filter(visible_courses)
         params = self.request.query_params
         category = params.get('category')
         if category:
@@ -148,20 +164,37 @@ class CourseCatalogV1(generics.ListCreateAPIView):
 
 
 class CourseDetailV1(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Course.objects.select_related('category', 'instructor').prefetch_related(
-        'lessons', 'sections'
-    ).annotate(
-        average_rating=Avg('reviews__rating'),
-        review_count=Count('reviews', distinct=True),
-        enrolled_count=Count('enrollments', distinct=True),
-        total_duration_minutes=Subquery(
-            Lesson.objects.filter(course_id=OuterRef('pk')).order_by().values('course_id')
-            .annotate(total=Sum('duration_minutes')).values('total')[:1]
-        ),
-    )
     serializer_class = VersionedCourseSerializer
     permission_classes = [IsCourseOwnerOrStaffOrReadOnly]
     lookup_field = 'slug'
+
+    def get_queryset(self):
+        queryset = Course.objects.select_related('category', 'instructor').prefetch_related(
+            'lessons', 'sections'
+        ).annotate(
+            average_rating=Avg('reviews__rating'),
+            review_count=Count('reviews', distinct=True),
+            enrolled_count=Count('enrollments', distinct=True),
+            active_order_reservations=Count(
+                'order_items',
+                filter=Q(
+                    order_items__order__status__in=['draft', 'pending'],
+                    order_items__order__expires_at__gt=timezone.now(),
+                ),
+                distinct=True,
+            ),
+            total_duration_minutes=Subquery(
+                Lesson.objects.filter(course_id=OuterRef('pk')).order_by().values('course_id')
+                .annotate(total=Sum('duration_minutes')).values('total')[:1]
+            ),
+        )
+        user = self.request.user
+        if user.is_staff:
+            return queryset
+        visible_courses = Q(is_published=True)
+        if user.is_authenticated and getattr(user, 'is_verified_instructor', False):
+            visible_courses |= Q(instructor_id=user.pk)
+        return queryset.filter(visible_courses)
 
 
 class CourseSectionsV1(generics.ListCreateAPIView):
@@ -170,7 +203,14 @@ class CourseSectionsV1(generics.ListCreateAPIView):
     pagination_class = CourseApiPagination
 
     def get_course(self):
-        return get_object_or_404(Course, slug=self.kwargs['course_slug'])
+        user = self.request.user
+        queryset = Course.objects.filter(slug=self.kwargs['course_slug'])
+        if not user.is_staff:
+            visible_courses = Q(is_published=True)
+            if user.is_authenticated and getattr(user, 'is_verified_instructor', False):
+                visible_courses |= Q(instructor_id=user.pk)
+            queryset = queryset.filter(visible_courses)
+        return get_object_or_404(queryset)
 
     def get_queryset(self):
         return Section.objects.filter(course__slug=self.kwargs['course_slug']).select_related('course')
@@ -382,10 +422,19 @@ class ManualEnrollmentCreateV1(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         student = serializer.validated_data['student']
         course = serializer.validated_data['course']
-        if Enrollment.objects.filter(student=student, course=course).exists():
-            raise ValidationError({'detail': 'This student is already enrolled in this course.'})
-
-        enrollment = serializer.save(enrolled_by=request.user)
+        with transaction.atomic():
+            course = Course.objects.select_for_update().get(pk=course.pk)
+            if Enrollment.objects.filter(student=student, course=course).exists():
+                raise ValidationError({'detail': 'This student is already enrolled in this course.'})
+            if course.seat_capacity is not None:
+                reservations = OrderItem.objects.filter(
+                    course=course,
+                    order__status__in=[Order.Status.DRAFT, Order.Status.PENDING],
+                    order__expires_at__gt=timezone.now(),
+                ).count()
+                if course.enrollments.count() + reservations >= course.seat_capacity:
+                    raise ValidationError({'detail': 'This course has no seats available.'})
+            enrollment = serializer.save(enrolled_by=request.user, course=course)
         send_notification_email(
             'enrolment',
             student.email,

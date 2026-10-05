@@ -1,0 +1,19 @@
+{% extends 'courses/storefront/base.html' %}
+{% block title %}Create account | CAI Technologies{% endblock %}
+{% block content %}
+<section class="auth-layout page-width">
+    <div class="auth-aside"><p class="eyebrow">CAI TECHNOLOGIES · START LEARNING</p><h1>Make room<br><em>for what’s next.</em></h1><p>Create your student account to keep your courses, progress, and purchases together.</p></div>
+    <form class="auth-form" method="post" data-disable-on-submit>
+        {% csrf_token %}<input type="hidden" name="next" value="{{ next }}">
+        <p class="eyebrow eyebrow-dark">STUDENT ACCOUNT</p><h2>Create account</h2>
+        {% if form_errors %}<div class="form-error" role="alert"><ul>{% for error in form_errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+        <label class="form-field">Full name<input name="full_name" autocomplete="name" required maxlength="200"></label>
+        <label class="form-field">Username<input name="username" autocomplete="username" required maxlength="150"></label>
+        <label class="form-field">Email address<input type="email" name="email" autocomplete="email" required></label>
+        <label class="form-field">Phone number <span class="field-hint">Optional</span><input type="tel" name="phone_number" autocomplete="tel"></label>
+        <label class="form-field">Password<input type="password" name="password" autocomplete="new-password" required></label>
+        <button class="button button-green button-full" type="submit">Create account <span aria-hidden="true">→</span></button>
+        <p class="auth-switch">Already have an account? <a href="{% url 'storefront-login' %}?next={{ next|urlencode }}">Sign in</a></p>
+    </form>
+</section>
+{% endblock %}

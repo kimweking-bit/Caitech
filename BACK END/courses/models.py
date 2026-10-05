@@ -24,6 +24,11 @@ class Course(models.Model):
         CERTIFICATE = 'certificate', 'Certificate'
         SHORT_COURSE = 'short_course', 'Short course'
 
+    class Level(models.TextChoices):
+        BEGINNER = 'beginner', 'Beginner'
+        INTERMEDIATE = 'intermediate', 'Intermediate'
+        ADVANCED = 'advanced', 'Advanced'
+
     class DeliveryMode(models.TextChoices):
         ONLINE = 'online', 'Online'
         PHYSICAL = 'physical', 'Physical'
@@ -36,7 +41,10 @@ class Course(models.Model):
 
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
+    short_description = models.CharField(max_length=280, blank=True)
     description = models.TextField()
+    learning_outcomes = models.JSONField(default=list, blank=True)
+    image = models.ImageField(upload_to='course_thumbnails/%Y/%m/', blank=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='courses')
     instructor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -63,6 +71,8 @@ class Course(models.Model):
         null=True,
         validators=[MinValueValidator(1)],
     )
+    level = models.CharField(max_length=20, choices=Level.choices, blank=True, default='')
+    is_published = models.BooleanField(default=True)
     is_free = models.BooleanField(default=False)
     course_type = models.CharField(
         max_length=20,
@@ -83,6 +93,25 @@ class Course(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def is_available(self):
+        if not self.is_published or self.intake_status == self.IntakeStatus.CLOSED:
+            return False
+        if self.seat_capacity is None:
+            return True
+        enrolled = getattr(self, 'enrolled_count', None)
+        enrolled = enrolled if enrolled is not None else self.enrollments.count()
+        reservations = getattr(self, 'active_order_reservations', None)
+        if reservations is None:
+            from payments.models import Order, OrderItem
+
+            reservations = OrderItem.objects.filter(
+                course=self,
+                order__status__in=[Order.Status.DRAFT, Order.Status.PENDING],
+                order__expires_at__gt=timezone.now(),
+            ).count()
+        return enrolled + reservations < self.seat_capacity
 
 
 class Section(models.Model):
@@ -146,6 +175,13 @@ class Enrollment(models.Model):
         related_name='enrollments',
     )
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
+    order = models.ForeignKey(
+        'payments.Order',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='enrollments',
+    )
     enrolled_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

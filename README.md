@@ -50,6 +50,7 @@ python manage.py runserver
 | EMAIL_USE_TLS | SMTP TLS on/off | True |
 | EMAIL_USE_SSL | SMTP SSL on/off | False |
 | FRONTEND_URL | Frontend base URL for reset links | http://localhost:3000 |
+| SITE_URL | Public base URL for storefront and purchase emails | https://caitech.co.ke |
 | ACCESS_TOKEN_LIFETIME_MINUTES | JWT access lifetime | 15 |
 | REFRESH_TOKEN_LIFETIME_DAYS | JWT refresh lifetime | 7 |
 | SECURE_SSL_REDIRECT | Redirect to HTTPS | True |
@@ -122,6 +123,15 @@ DATABASE_URL=postgres://caitech:password@db:5432/caitech
 
 ## API groups and key routes
 
+### Storefront pages
+
+- `/` and `/courses/` show the public course catalog.
+- `/courses/<slug>/` shows course details and purchase/enrollment actions.
+- `/cart/` and `/checkout/` provide guest/authenticated shopping and checkout.
+- `/my-courses/` shows the authenticated student's course dashboard.
+- `/my-courses/<slug>/` protects the course room behind enrollment.
+- `/account/login/` and `/account/register/` preserve guest carts after authentication.
+
 ### Authentication
 
 - `POST /api/v1/auth/register/`
@@ -155,13 +165,17 @@ DATABASE_URL=postgres://caitech:password@db:5432/caitech
 
 ### Course payments
 
+- `GET /api/v1/payments/cart/` and `POST /api/v1/payments/cart/` view/add authenticated cart items.
+- `DELETE /api/v1/payments/cart/items/<course_id>/` removes a cart item.
+- `POST /api/v1/payments/cart/coupon/` and `DELETE /api/v1/payments/cart/coupon/` apply/remove a coupon.
+- `POST /api/v1/payments/cart/checkout/` creates a server-priced order and initiates M-Pesa.
 - `POST /api/v1/payments/orders/` creates an order for a course, optionally applying a coupon code.
 - `POST /api/v1/payments/orders/<order_reference>/initiate/` starts M-Pesa (`method` and `phone_number`), hosted card (`method: card`), or hosted PayPal (`method: paypal`) checkout.
 - `GET /api/v1/payments/orders/<order_reference>/status/` polls an order owned by the authenticated user.
 - `POST /api/v1/payments/callbacks/mpesa/<transaction_reference>/<token>/` receives a Daraja STK callback.
 - `POST /api/v1/payments/callbacks/card/` and `/api/v1/payments/callbacks/paypal/` receive HMAC-signed hosted-provider callbacks.
 
-The card and PayPal adapters currently create hosted redirect URLs but do not create real provider sessions. Configure their hosted URL and webhook secret when integrating a provider. Card numbers and CVV are never accepted or stored. Daraja callbacks are authenticated with a transaction-bound HMAC URL token because STK callbacks do not provide a native request signature; use HTTPS and keep `MPESA_CALLBACK_SECRET` private.
+Only M-Pesa currently initiates a payment session. Card and PayPal remain behind the provider abstraction but are deliberately disabled until real hosted-session adapters and provider verification are configured; their HMAC callback interface is not a live gateway integration. Card numbers and CVV are never accepted or stored. Daraja callbacks are authenticated with a transaction-bound HMAC URL token because STK callbacks do not provide a native request signature; use HTTPS and keep `MPESA_CALLBACK_SECRET` private.
 
 ### Site content
 

@@ -48,6 +48,7 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
     enrolled_count = serializers.IntegerField(read_only=True, default=0)
     percent_booked = serializers.SerializerMethodField()
     total_duration_hours = serializers.SerializerMethodField()
+    is_available = serializers.SerializerMethodField()
     course_type = serializers.ChoiceField(
         choices=Course.CourseType.choices,
         required=False,
@@ -64,21 +65,25 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
         allow_blank=True,
     )
     whatsapp_inquiry_url = serializers.URLField(required=False, allow_blank=True)
+    image = serializers.ImageField(required=False, allow_empty_file=False)
 
     class Meta:
         model = Course
         fields = [
-            'id', 'title', 'slug', 'description', 'category', 'category_name',
+            'id', 'title', 'slug', 'short_description', 'description', 'learning_outcomes', 'image',
+            'category', 'category_name',
             'instructor', 'instructor_username', 'price', 'original_price',
-            'currency', 'seat_capacity', 'is_free', 'created_at',
+            'currency', 'seat_capacity', 'level', 'is_published', 'is_free', 'created_at',
             'sections', 'lessons', 'average_rating', 'review_count',
             'enrolled_count', 'percent_booked', 'total_duration_hours',
+            'is_available',
             'course_type', 'duration', 'delivery_modes', 'intake_status',
             'whatsapp_inquiry_url',
         ]
         read_only_fields = [
             'instructor', 'average_rating', 'review_count', 'enrolled_count',
             'percent_booked', 'total_duration_hours',
+            'is_available',
         ]
 
     @extend_schema_field(serializers.FloatField(allow_null=True))
@@ -88,7 +93,7 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
         enrolled_count = getattr(course, 'enrolled_count', None)
         if enrolled_count is None:
             enrolled_count = course.enrollments.count()
-        return round(enrolled_count * 100 / course.seat_capacity, 2)
+        return min(100, round(enrolled_count * 100 / course.seat_capacity, 2))
 
     @extend_schema_field(serializers.FloatField())
     def get_total_duration_hours(self, course):
@@ -96,6 +101,10 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
         if total_minutes is None:
             total_minutes = course.lessons.aggregate(total=Sum('duration_minutes'))['total']
         return round((total_minutes or 0) / 60, 2)
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_available(self, course):
+        return course.is_available
 
     @extend_schema_field(LessonSerializer(many=True))
     def get_lessons(self, course):
@@ -146,6 +155,7 @@ class CourseSerializer(serializers.ModelSerializer):
     lessons = serializers.SerializerMethodField()
     category_name = serializers.CharField(source='category.name', read_only=True)
     instructor_username = serializers.CharField(source='instructor.username', read_only=True)
+    image = serializers.ImageField(required=False, allow_empty_file=False)
 
     @extend_schema_field(LessonSerializer(many=True))
     def get_lessons(self, course):
@@ -168,10 +178,11 @@ class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
-            'id', 'title', 'slug', 'description',
+            'id', 'title', 'slug', 'short_description', 'description', 'learning_outcomes', 'image',
             'category', 'category_name',
             'instructor', 'instructor_username',
-            'price', 'is_free', 'created_at', 'lessons'
+            'price', 'original_price', 'currency', 'seat_capacity', 'level',
+            'is_published', 'is_free', 'created_at', 'lessons'
         ]
         read_only_fields = ['instructor']
 
@@ -225,12 +236,16 @@ class DashboardEnrollmentSerializer(serializers.ModelSerializer):
     completed_lessons = serializers.SerializerMethodField()
     total_lessons = serializers.SerializerMethodField()
     progress_percentage = serializers.SerializerMethodField()
+    instructor_username = serializers.CharField(source='course.instructor.username', read_only=True)
+    course_duration = serializers.CharField(source='course.duration', read_only=True)
+    course_image = serializers.ImageField(source='course.image', read_only=True)
 
     class Meta:
         model = Enrollment
         fields = [
             'id', 'course_id', 'course_title', 'course_slug', 'enrolled_at',
             'completed', 'completed_lessons', 'total_lessons', 'progress_percentage',
+            'instructor_username', 'course_duration', 'course_image',
         ]
 
     @extend_schema_field(serializers.IntegerField())

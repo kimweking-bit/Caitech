@@ -1,0 +1,48 @@
+{% extends 'courses/storefront/base.html' %}
+{% block title %}Your cart | CAI Technologies{% endblock %}
+{% block content %}
+<section class="page-width commerce-page">
+    <a class="back-link" href="{% url 'storefront-catalog' %}">← Continue browsing</a>
+    <div class="commerce-heading"><div><p class="eyebrow eyebrow-dark">YOUR SELECTION</p><h1>Shopping cart</h1></div><span class="muted-count">{{ cart_count }} course{{ cart_count|pluralize }}</span></div>
+    {% if cart_courses %}
+        <div class="commerce-layout">
+            <div class="cart-lines">
+                {% for course in cart_courses %}
+                    <article class="cart-line">
+                        <a class="cart-thumb course-cover" href="{% url 'storefront-course-detail' course.slug %}">
+                            {% if course.image %}<img src="{{ course.image.url }}" alt="{{ course.title }}">
+                            {% else %}<span class="cover-orbit"></span><span class="cover-word">{{ course.category.name|default:'CAI'|slice:':1' }}</span>{% endif %}
+                        </a>
+                        <div class="cart-line-info"><span class="eyebrow eyebrow-dark">{{ course.category.name }}</span><h2><a href="{% url 'storefront-course-detail' course.slug %}">{{ course.title }}</a></h2><p>{{ course.level|default:'Online course' }}{% if course.duration %} · {{ course.duration }}{% endif %}</p></div>
+                        <div class="cart-line-price">
+                            <strong>{% if course.price == 0 %}Free{% else %}{{ course.currency }} {{ course.price|floatformat:0 }}{% endif %}</strong>
+                            {% if course.original_price and course.original_price > course.price %}<del>{{ course.currency }} {{ course.original_price|floatformat:0 }}</del>{% endif %}
+                            <form method="post" action="{% url 'storefront-remove-from-cart' course.pk %}">{% csrf_token %}<button class="remove-button" type="submit">Remove</button></form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+            <aside class="summary-panel">
+                <p class="eyebrow eyebrow-dark">ORDER SUMMARY</p><h2>Ready when you are.</h2>
+                <form class="coupon-form" method="post" action="{% url 'storefront-apply-coupon' %}">
+                    {% csrf_token %}<label for="coupon-code">Discount code</label><div class="coupon-input-row"><input id="coupon-code" name="coupon_code" value="{{ coupon_code }}" placeholder="Enter code"><button class="button button-outline button-small" type="submit">Apply</button></div>
+                </form>
+                {% if coupon_code %}<form method="post" action="{% url 'storefront-remove-coupon' %}">{% csrf_token %}<button class="remove-button" type="submit">Remove {{ coupon_code }}</button></form>{% endif %}
+                {% if coupon_error %}<p class="form-error">{{ coupon_error }}</p>{% endif %}
+                <dl class="totals-list">
+                    <div><dt>Subtotal</dt><dd>{{ currency }} {{ subtotal|floatformat:2 }}</dd></div>
+                    <div><dt>Discount</dt><dd class="discount-amount">− {{ currency }} {{ discount_amount|floatformat:2 }}</dd></div>
+                    <div><dt>Fees</dt><dd>{{ currency }} {{ fee_amount|floatformat:2 }}</dd></div>
+                    <div class="total-row"><dt>Total</dt><dd>{{ currency }} {{ total|floatformat:2 }}</dd></div>
+                </dl>
+                {% if can_checkout %}<a class="button button-green button-full" href="{% url 'storefront-checkout' %}">Proceed to checkout <span aria-hidden="true">→</span></a>
+                {% elif not request.user.is_authenticated %}<a class="button button-green button-full" href="{% url 'storefront-login' %}?next={% url 'storefront-checkout' %}">Sign in to checkout <span aria-hidden="true">→</span></a>
+                {% else %}<button class="button button-disabled button-full" disabled>Checkout unavailable</button>{% endif %}
+                <p class="summary-footnote">Your course access begins after payment confirmation.</p>
+            </aside>
+        </div>
+    {% else %}
+        <div class="empty-state cart-empty"><span class="empty-mark">CAI</span><h2>Your cart is waiting.</h2><p>Choose a course that fits the next step you want to take.</p><a class="button button-dark" href="{% url 'storefront-catalog' %}">Explore courses</a></div>
+    {% endif %}
+</section>
+{% endblock %}

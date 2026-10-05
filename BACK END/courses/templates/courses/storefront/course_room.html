@@ -1,0 +1,19 @@
+{% extends 'courses/storefront/base.html' %}
+{% block title %}{{ course.title }} | My learning{% endblock %}
+{% block content %}
+<section class="page-width classroom-page">
+    <a class="back-link" href="{% url 'storefront-dashboard' %}">← My courses</a>
+    <div class="classroom-heading"><div><p class="eyebrow eyebrow-dark">YOUR COURSE</p><h1>{{ course.title }}</h1><p>{{ course.short_description }}</p></div><span class="course-access-pill">Enrolled</span></div>
+    <div class="classroom-layout">
+        <main class="lesson-list-panel"><p class="eyebrow eyebrow-dark">COURSE CONTENT</p><h2>Continue learning</h2>
+            {% for section in sections %}
+                <section class="classroom-module"><h3><span>{{ forloop.counter|stringformat:'02d' }}</span>{{ section.title }}</h3>
+                    <ul>{% for lesson in section.lessons.all %}<li><span class="lesson-play" aria-hidden="true">▶</span><span>{{ lesson.title }}</span>{% if lesson.duration_minutes %}<small>{{ lesson.duration_minutes }} min</small>{% endif %}{% if lesson.video_url %}<a href="{{ lesson.video_url }}" target="_blank" rel="noopener">Open lesson</a>{% endif %}</li>{% empty %}<li class="muted-row">Lessons will be added soon.</li>{% endfor %}</ul>
+                </section>
+            {% endfor %}
+            {% if standalone_lessons %}<section class="classroom-module"><h3>Course lessons</h3><ul>{% for lesson in standalone_lessons %}<li><span class="lesson-play" aria-hidden="true">▶</span><span>{{ lesson.title }}</span>{% if lesson.video_url %}<a href="{{ lesson.video_url }}" target="_blank" rel="noopener">Open lesson</a>{% endif %}</li>{% endfor %}</ul></section>{% endif %}
+        </main>
+        <aside class="classroom-aside"><p class="eyebrow eyebrow-dark">INSTRUCTOR</p><div class="instructor-card"><span class="instructor-avatar">{{ course.instructor.first_name|default:course.instructor.username|slice:':1'|upper }}</span><div><strong>{{ course.instructor.get_full_name|default:course.instructor.username }}</strong><small>{{ course.duration|default:'CAI Technologies instructor' }}</small></div></div><p class="classroom-note">Your enrollment gives you access to the full course content. Your progress is saved as you learn.</p></aside>
+    </div>
+</section>
+{% endblock %}

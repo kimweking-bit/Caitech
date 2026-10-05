@@ -1,7 +1,10 @@
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
+from django.db.models import Q
 from accounts.services import send_notification_email
+from payments.models import Order, OrderItem
 
 from .models import Category, Course, Lesson, Enrollment
 from .serializers import CategorySerializer, CourseSerializer, LessonSerializer, EnrollmentSerializer
@@ -14,14 +17,32 @@ class CategoryListView(generics.ListAPIView):
 
 
 class CourseListView(generics.ListAPIView):
-    queryset = Course.objects.all()
     serializer_class = CourseSerializer
+
+    def get_queryset(self):
+        queryset = Course.objects.select_related('category', 'instructor')
+        user = self.request.user
+        if user.is_staff:
+            return queryset
+        visible_courses = Q(is_published=True)
+        if user.is_authenticated and getattr(user, 'is_verified_instructor', False):
+            visible_courses |= Q(instructor_id=user.pk)
+        return queryset.filter(visible_courses)
 
 
 class CourseDetailView(generics.RetrieveAPIView):
-    queryset = Course.objects.all()
     serializer_class = CourseSerializer
     lookup_field = 'slug'
+
+    def get_queryset(self):
+        queryset = Course.objects.select_related('category', 'instructor')
+        user = self.request.user
+        if user.is_staff:
+            return queryset
+        visible_courses = Q(is_published=True)
+        if user.is_authenticated and getattr(user, 'is_verified_instructor', False):
+            visible_courses |= Q(instructor_id=user.pk)
+        return queryset.filter(visible_courses)
 
 
 class CourseCreateView(generics.CreateAPIView):
@@ -53,7 +74,18 @@ class EnrollmentCreateView(generics.CreateAPIView):
 
         try:
             with transaction.atomic():
-                enrollment = serializer.save(student=self.request.user)
+                locked_course = Course.objects.select_for_update().get(pk=course.pk)
+                if not locked_course.is_published or locked_course.intake_status == Course.IntakeStatus.CLOSED:
+                    raise ValidationError({'detail': 'This course is not currently available.'})
+                if locked_course.seat_capacity is not None:
+                    reserved = OrderItem.objects.filter(
+                        course=locked_course,
+                        order__status__in=[Order.Status.DRAFT, Order.Status.PENDING],
+                        order__expires_at__gt=timezone.now(),
+                    ).count()
+                    if locked_course.enrollments.count() + reserved >= locked_course.seat_capacity:
+                        raise ValidationError({'detail': 'This course has no seats available.'})
+                enrollment = serializer.save(student=self.request.user, course=locked_course)
         except IntegrityError as exc:
             raise ValidationError(error) from exc
 

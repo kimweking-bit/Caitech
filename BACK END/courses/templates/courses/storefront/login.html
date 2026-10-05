@@ -1,0 +1,16 @@
+{% extends 'courses/storefront/base.html' %}
+{% block title %}Sign in | CAI Technologies{% endblock %}
+{% block content %}
+<section class="auth-layout page-width">
+    <div class="auth-aside"><p class="eyebrow">CAI TECHNOLOGIES · YOUR NEXT CHAPTER</p><h1>Good to have<br><em>you back.</em></h1><p>Sign in to continue learning and pick up where you left off.</p></div>
+    <form class="auth-form" method="post" data-disable-on-submit>
+        {% csrf_token %}<input type="hidden" name="next" value="{{ next }}">
+        <p class="eyebrow eyebrow-dark">STUDENT ACCOUNT</p><h2>Sign in</h2>
+        {% if form_error %}<p class="form-error" role="alert">{{ form_error }}</p>{% endif %}
+        <label class="form-field">Username<input name="username" autocomplete="username" required autofocus></label>
+        <label class="form-field">Password<input type="password" name="password" autocomplete="current-password" required></label>
+        <button class="button button-green button-full" type="submit">Sign in <span aria-hidden="true">→</span></button>
+        <p class="auth-switch">New to CAI Technologies? <a href="{% url 'storefront-register' %}?next={{ next|urlencode }}">Create an account</a></p>
+    </form>
+</section>
+{% endblock %}

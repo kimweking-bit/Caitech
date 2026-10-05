@@ -19,13 +19,20 @@ class Order(models.Model):
 	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='orders')
 	status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
 	currency = models.CharField(max_length=3, choices=[('KES', 'Kenyan Shilling'), ('USD', 'US Dollar')])
+	customer_name = models.CharField(max_length=200, blank=True)
+	customer_email = models.EmailField(blank=True)
+	customer_phone = models.CharField(max_length=20, blank=True)
 	subtotal = models.DecimalField(max_digits=10, decimal_places=2)
 	discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+	fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 	total = models.DecimalField(max_digits=10, decimal_places=2)
 	coupon = models.ForeignKey(
 		'Coupon', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders'
 	)
 	coupon_code = models.CharField(max_length=50, blank=True)
+	expires_at = models.DateTimeField(blank=True, null=True)
+	confirmation_email_sent = models.BooleanField(default=False)
+	confirmation_email_last_attempt = models.DateTimeField(blank=True, null=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 
@@ -34,6 +41,7 @@ class Order(models.Model):
 		constraints = [
 			models.CheckConstraint(condition=Q(subtotal__gte=0), name='order_subtotal_nonnegative'),
 			models.CheckConstraint(condition=Q(discount_amount__gte=0), name='order_discount_nonnegative'),
+			models.CheckConstraint(condition=Q(fee_amount__gte=0), name='order_fee_nonnegative'),
 			models.CheckConstraint(condition=Q(total__gte=0), name='order_total_nonnegative'),
 		]
 
@@ -46,6 +54,7 @@ class OrderItem(models.Model):
 	course = models.ForeignKey('courses.Course', on_delete=models.PROTECT, related_name='order_items')
 	course_title = models.CharField(max_length=200)
 	unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+	original_unit_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
 	currency = models.CharField(max_length=3, choices=[('KES', 'Kenyan Shilling'), ('USD', 'US Dollar')])
 	quantity = models.PositiveSmallIntegerField(default=1)
 
@@ -53,7 +62,32 @@ class OrderItem(models.Model):
 		constraints = [
 			models.UniqueConstraint(fields=['order', 'course'], name='unique_course_per_order'),
 			models.CheckConstraint(condition=Q(unit_price__gte=0), name='order_item_price_nonnegative'),
+			models.CheckConstraint(
+				condition=Q(original_unit_price__isnull=True) | Q(original_unit_price__gte=0),
+				name='order_item_original_price_nonnegative',
+			),
 			models.CheckConstraint(condition=Q(quantity__gte=1), name='order_item_quantity_positive'),
+		]
+
+
+class Cart(models.Model):
+	user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='course_cart')
+	coupon_code = models.CharField(max_length=50, blank=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
+	def __str__(self):
+		return f'Cart for {self.user}'
+
+
+class CartItem(models.Model):
+	cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
+	course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='cart_items')
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['created_at', 'pk']
+		constraints = [
+			models.UniqueConstraint(fields=['cart', 'course'], name='unique_course_per_cart'),
 		]
 
 

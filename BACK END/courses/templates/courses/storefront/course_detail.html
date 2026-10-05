@@ -1,0 +1,78 @@
+{% extends 'courses/storefront/base.html' %}
+{% block title %}{{ course.title }} | CAI Technologies{% endblock %}
+{% block content %}
+<div class="detail-shell page-width">
+    <div class="detail-main">
+        <a class="back-link" href="{% url 'storefront-catalog' %}">← All courses</a>
+        <div class="detail-cover course-cover">
+            {% if course.image %}<img src="{{ course.image.url }}" alt="{{ course.title }} course">
+            {% else %}<span class="cover-orbit"></span><span class="cover-category">{{ course.category.name }}</span><span class="cover-word">{{ course.category.name|default:'CAI'|slice:':1' }}</span>{% endif %}
+            <span class="detail-cover-label">CAI TECHNOLOGIES · COURSE {{ course.pk|stringformat:'02d' }}</span>
+        </div>
+        <div class="detail-heading">
+            <p class="eyebrow eyebrow-dark">{{ course.category.name }}{% if course.level %} · {{ course.get_level_display }}{% endif %}</p>
+            <h1>{{ course.title }}</h1>
+            <p class="detail-lede">{{ course.short_description|default:course.description }}</p>
+            <div class="detail-byline">
+                <span class="instructor-avatar">{{ course.instructor.first_name|default:course.instructor.username|slice:':1'|upper }}</span>
+                <span><small>Course instructor</small><strong>{{ course.instructor.get_full_name|default:course.instructor.username }}</strong></span>
+                {% if course.duration %}<span class="byline-divider"></span><span><small>Duration</small><strong>{{ course.duration }}</strong></span>{% endif %}
+            </div>
+        </div>
+        <section class="detail-section">
+            <p class="eyebrow eyebrow-dark">ABOUT THE COURSE</p>
+            <h2>Learn by doing.</h2>
+            <div class="rich-copy">{{ course.description|linebreaks }}</div>
+        </section>
+        {% if course.learning_outcomes %}
+            <section class="detail-section outcomes-section">
+                <p class="eyebrow eyebrow-dark">WHAT YOU WILL LEARN</p>
+                <h2>Leave with practical skills.</h2>
+                <ul>{% for outcome in course.learning_outcomes %}<li><span aria-hidden="true">+</span>{{ outcome }}</li>{% endfor %}</ul>
+            </section>
+        {% endif %}
+        {% if course.sections.exists or course.lessons.exists %}
+            <section class="detail-section curriculum-section">
+                <p class="eyebrow eyebrow-dark">COURSE CONTENT</p>
+                <h2>Your learning path</h2>
+                {% for section in course.sections.all %}
+                    <details class="module-row" {% if forloop.first %}open{% endif %}>
+                        <summary><span class="module-number">{{ forloop.counter|stringformat:'02d' }}</span><span>{{ section.title }}</span><span class="module-count">{{ section.lessons.count }} lessons</span></summary>
+                        <ul>{% for lesson in section.lessons.all %}<li><span>{{ lesson.title }}</span>{% if lesson.duration_minutes %}<small>{{ lesson.duration_minutes }} min</small>{% endif %}</li>{% endfor %}</ul>
+                    </details>
+                {% endfor %}
+                {% if course.lessons.exists %}<ul class="standalone-list">{% for lesson in course.lessons.all %}{% if not lesson.section %}<li>{{ lesson.title }}</li>{% endif %}{% endfor %}</ul>{% endif %}
+            </section>
+        {% endif %}
+    </div>
+    <aside class="purchase-panel">
+        <div class="purchase-image">
+            {% if course.image %}<img src="{{ course.image.url }}" alt="">
+            {% else %}<span class="cover-orbit"></span><span class="cover-word">{{ course.category.name|default:'CAI'|slice:':1' }}</span>{% endif %}
+        </div>
+        <div class="purchase-panel-content">
+            <div class="detail-price">
+                {% if course.price == 0 %}<strong>Free</strong>
+                {% else %}<strong>{{ course.currency }} {{ course.price|floatformat:0 }}</strong>
+                    {% if course.original_price and course.original_price > course.price %}<del>{{ course.currency }} {{ course.original_price|floatformat:0 }}</del><span class="discount-note">Sale price</span>{% endif %}
+                {% endif %}
+            </div>
+            {% if owned %}
+                <a class="button button-green button-full" href="{% url 'storefront-course-room' course.slug %}">Go to course</a>
+            {% elif course.price == 0 %}
+                <form method="post" action="{% url 'storefront-free-enroll' course.slug %}">{% csrf_token %}<button class="button button-green button-full" type="submit">Enroll for free</button></form>
+            {% elif course.is_available %}
+                <form method="post" action="{% url 'storefront-add-to-cart' course.pk %}">{% csrf_token %}<button class="button button-dark button-full" type="submit">Buy course</button></form>
+            {% else %}<p class="sold-out-label">Enrollment is currently unavailable.</p>{% endif %}
+            <p class="secure-note"><span aria-hidden="true">●</span> Secure checkout · M-Pesa</p>
+            <ul class="purchase-facts">
+                {% if course.duration %}<li><span>Duration</span><strong>{{ course.duration }}</strong></li>{% endif %}
+                {% if course.total_duration_minutes %}<li><span>Learning time</span><strong>{{ course.total_duration_minutes|floatformat:0 }} minutes</strong></li>{% endif %}
+                <li><span>Level</span><strong>{{ course.get_level_display|default:'All levels' }}</strong></li>
+                <li><span>Format</span><strong>{% if course.delivery_modes %}{{ course.delivery_modes|join:', ' }}{% else %}Online learning{% endif %}</strong></li>
+                {% if course.seat_capacity %}<li><span>Places booked</span><strong>{{ course.enrolled_count }} / {{ course.seat_capacity }}</strong></li>{% endif %}
+            </ul>
+        </div>
+    </aside>
+</div>
+{% endblock %}

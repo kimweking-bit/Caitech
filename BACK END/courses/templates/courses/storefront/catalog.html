@@ -1,0 +1,93 @@
+{% extends 'courses/storefront/base.html' %}
+{% block title %}Courses | CAI Technologies{% endblock %}
+{% block content %}
+<section class="catalog-intro page-width">
+    <div class="intro-copy">
+        <p class="eyebrow"><span class="eyebrow-dot"></span> CAI TECHNOLOGIES · LEARN IN KENYA</p>
+        <h1>Skills that move<br><em>your work forward.</em></h1>
+        <p class="intro-summary">Explore practical courses built for real work, better opportunities, and the next step in your career.</p>
+    </div>
+    <div class="intro-stamp" aria-hidden="true">
+        <span class="stamp-ring">CAI · LEARN · BUILD · GROW ·</span>
+        <strong>01</strong><small>Start here</small>
+    </div>
+</section>
+
+<section class="catalog-section page-width" aria-labelledby="catalog-title">
+    <div class="catalog-toolbar">
+        <div>
+            <p class="eyebrow eyebrow-dark">THE COURSE CATALOG</p>
+            <h2 id="catalog-title">Find your next skill</h2>
+        </div>
+        <form class="catalog-filters" method="get">
+            <label class="search-field"><span class="visually-hidden">Search courses</span>
+                <input type="search" name="q" value="{{ query }}" placeholder="Search courses">
+            </label>
+            <label class="visually-hidden" for="category-filter">Category</label>
+            <select id="category-filter" name="category">
+                <option value="">All categories</option>
+                {% for category in categories %}
+                    <option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            <button class="button button-dark button-small" type="submit">Search</button>
+        </form>
+    </div>
+
+    {% if courses %}
+        <div class="course-grid">
+            {% for course in courses %}
+                <article class="course-card">
+                    <a class="course-cover" href="{% url 'storefront-course-detail' course.slug %}" aria-label="View {{ course.title }}">
+                        {% if course.image %}
+                            <img src="{{ course.image.url }}" alt="{{ course.title }} course">
+                        {% else %}
+                            <span class="cover-orbit"></span>
+                            <span class="cover-index">{{ forloop.counter|stringformat:'02d' }}</span>
+                            <span class="cover-category">{{ course.category.name }}</span>
+                            <span class="cover-word">{{ course.category.name|default:'CAI'|slice:':1' }}</span>
+                        {% endif %}
+                        {% if course.original_price and course.original_price > course.price %}<span class="sale-flag">Special price</span>{% endif %}
+                    </a>
+                    <div class="course-card-body">
+                        <div class="course-card-meta">
+                            <span>{{ course.category.name }}</span>
+                            {% if course.level %}<span>{{ course.get_level_display }}</span>{% endif %}
+                        </div>
+                        <h3><a href="{% url 'storefront-course-detail' course.slug %}">{{ course.title }}</a></h3>
+                        <p class="course-summary">{{ course.short_description|default:course.description|truncatechars:112 }}</p>
+                        <div class="course-card-bottom">
+                            <div class="price-stack">
+                                {% if course.price == 0 %}
+                                    <strong>Free</strong>
+                                {% else %}
+                                    <strong>{{ course.currency }} {{ course.price|floatformat:0 }}</strong>
+                                    {% if course.original_price and course.original_price > course.price %}<del>{{ course.currency }} {{ course.original_price|floatformat:0 }}</del>{% endif %}
+                                {% endif %}
+                            </div>
+                            {% if course.pk in owned_course_ids %}
+                                <a class="button button-outline button-small" href="{% url 'storefront-course-room' course.slug %}">Go to course</a>
+                            {% elif course.price == 0 %}
+                                <form method="post" action="{% url 'storefront-free-enroll' course.slug %}">
+                                    {% csrf_token %}<button class="button button-green button-small" type="submit">Enroll free</button>
+                                </form>
+                            {% elif course.is_available %}
+                                <form method="post" action="{% url 'storefront-add-to-cart' course.pk %}">
+                                    {% csrf_token %}<button class="button button-dark button-small" type="submit">Buy course</button>
+                                </form>
+                            {% else %}<span class="sold-out-label">Unavailable</span>{% endif %}
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <span class="empty-mark">CAI</span>
+            <h3>No courses match those filters.</h3>
+            <p>Try another search or browse the complete catalog.</p>
+            <a class="button button-outline" href="{% url 'storefront-catalog' %}">Clear filters</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

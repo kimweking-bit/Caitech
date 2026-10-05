@@ -1,0 +1,53 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0d3038">
+    <title>{% block title %}CAI Technologies | Learn with purpose{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'courses/storefront.css' %}">
+    <script defer src="{% static 'courses/storefront.js' %}"></script>
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="{% url 'storefront-home' %}" aria-label="CAI Technologies home">
+            <span class="brand-mark">CAI</span>
+            <span class="brand-name">CAI <strong>Technologies</strong></span>
+        </a>
+        <nav class="main-nav" aria-label="Main navigation">
+            <a href="{% url 'storefront-catalog' %}">Courses</a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'storefront-dashboard' %}">My learning</a>
+            {% endif %}
+        </nav>
+        <div class="header-actions">
+            <a class="cart-link" href="{% url 'storefront-cart' %}" aria-label="Shopping cart">
+                <span aria-hidden="true">Bag</span><span class="cart-count">{{ cart_count|default:0 }}</span>
+            </a>
+            {% if request.user.is_authenticated %}
+                <span class="header-user">{{ request.user.first_name|default:request.user.username }}</span>
+                <form method="post" action="{% url 'storefront-logout' %}">
+                    {% csrf_token %}<button class="text-button" type="submit">Sign out</button>
+                </form>
+            {% else %}
+                <a class="header-login" href="{% url 'storefront-login' %}">Sign in</a>
+            {% endif %}
+        </div>
+    </header>
+
+    {% if messages %}
+        <div class="message-stack" aria-live="polite">
+            {% for message in messages %}<p class="message message-{{ message.tags }}">{{ message }}</p>{% endfor %}
+        </div>
+    {% endif %}
+
+    <main>{% block content %}{% endblock %}</main>
+
+    <footer class="site-footer">
+        <a class="footer-brand" href="{% url 'storefront-home' %}">CAI Technologies</a>
+        <span>Practical learning for a changing world.</span>
+        <a href="mailto:info@caitech.co.ke">Contact</a>
+    </footer>
+</body>
+</html>

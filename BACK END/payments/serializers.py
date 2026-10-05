@@ -4,9 +4,46 @@ from drf_spectacular.utils import extend_schema_field
 from .models import Order, OrderItem, PaymentTransaction
 
 
+class CartAddSerializer(serializers.Serializer):
+    course_id = serializers.IntegerField(min_value=1)
+
+
+class CartCouponSerializer(serializers.Serializer):
+    coupon_code = serializers.CharField(max_length=50)
+
+
+class CartLineSerializer(serializers.Serializer):
+    course_id = serializers.IntegerField()
+    title = serializers.CharField()
+    slug = serializers.SlugField()
+    image = serializers.CharField(allow_null=True)
+    currency = serializers.CharField()
+    unit_price = serializers.DecimalField(max_digits=10, decimal_places=2)
+    original_price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True)
+
+
+class CartResponseSerializer(serializers.Serializer):
+    items = CartLineSerializer(many=True)
+    currency = serializers.CharField(allow_blank=True)
+    subtotal = serializers.DecimalField(max_digits=10, decimal_places=2)
+    discount_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    fee_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total = serializers.DecimalField(max_digits=10, decimal_places=2)
+    coupon_code = serializers.CharField(allow_blank=True)
+
+
 class OrderCreateSerializer(serializers.Serializer):
     course_id = serializers.IntegerField(min_value=1)
     coupon_code = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    customer_name = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    customer_email = serializers.EmailField(required=False, allow_blank=True)
+    customer_phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+
+
+class CartCheckoutSerializer(serializers.Serializer):
+    customer_name = serializers.CharField(max_length=200)
+    customer_email = serializers.EmailField()
+    customer_phone = serializers.CharField(max_length=20)
 
 
 class OrderItemResponseSerializer(serializers.ModelSerializer):
@@ -28,7 +65,8 @@ class OrderResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'reference', 'status', 'currency', 'subtotal', 'discount_amount', 'total',
+            'reference', 'status', 'currency', 'subtotal', 'discount_amount',
+            'fee_amount', 'total', 'expires_at',
             'coupon_code', 'items', 'latest_transaction', 'created_at', 'updated_at',
         ]
 
@@ -85,6 +123,7 @@ class HostedProviderCallbackSerializer(serializers.Serializer):
     order_reference = serializers.UUIDField()
     provider_reference = serializers.CharField(max_length=150)
     amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    currency = serializers.ChoiceField(choices=[('KES', 'KES'), ('USD', 'USD')])
     status = serializers.ChoiceField(choices=PaymentTransaction.CallbackStatus.choices)
     provider_payment_reference = serializers.CharField(max_length=150, required=False, allow_blank=True)
 

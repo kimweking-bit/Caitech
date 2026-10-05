@@ -1,0 +1,26 @@
+{% extends 'courses/storefront/base.html' %}
+{% block title %}My learning | CAI Technologies{% endblock %}
+{% block content %}
+<section class="page-width dashboard-page">
+    <div class="dashboard-heading"><div><p class="eyebrow eyebrow-dark">YOUR CAI LEARNING SPACE</p><h1>Keep moving, {{ request.user.first_name|default:request.user.username }}.</h1><p>Everything you’re learning, gathered in one place.</p></div><a class="button button-outline" href="{% url 'storefront-catalog' %}">Browse courses</a></div>
+    <div class="dashboard-section-head"><div><p class="eyebrow eyebrow-dark">MY COURSES</p><h2>Your learning path</h2></div><span>{{ enrollments|length }} enrolled</span></div>
+    {% if enrollments %}
+        <div class="learning-list">
+            {% for enrollment in enrollments %}
+                <article class="learning-item">
+                    <a class="learning-thumb course-cover" href="{% url 'storefront-course-room' enrollment.course.slug %}">
+                        {% if enrollment.course.image %}<img src="{{ enrollment.course.image.url }}" alt="{{ enrollment.course.title }}">
+                        {% else %}<span class="cover-orbit"></span><span class="cover-word">{{ enrollment.course.category.name|default:'CAI'|slice:':1' }}</span>{% endif %}
+                    </a>
+                    <div class="learning-info"><span class="eyebrow eyebrow-dark">{{ enrollment.course.category.name }}</span><h3><a href="{% url 'storefront-course-room' enrollment.course.slug %}">{{ enrollment.course.title }}</a></h3><p>Instructor · {{ enrollment.course.instructor.get_full_name|default:enrollment.course.instructor.username }}{% if enrollment.course.duration %} · {{ enrollment.course.duration }}{% endif %}</p>
+                        <div class="progress-line"><span style="width: {{ enrollment.progress_percentage|default:0 }}%"></span></div><small>{{ enrollment.progress_percentage|default:0|floatformat:0 }}% complete · enrolled {{ enrollment.enrolled_at|date:'M j, Y' }}</small>
+                    </div>
+                    <a class="button button-green button-small" href="{% url 'storefront-course-room' enrollment.course.slug %}">{% if enrollment.completed %}Review course{% elif enrollment.progress_percentage %}Continue learning{% else %}Start learning{% endif %} <span aria-hidden="true">→</span></a>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state"><span class="empty-mark">01</span><h2>Your next skill starts here.</h2><p>Courses you enroll in will appear in this learning space.</p><a class="button button-dark" href="{% url 'storefront-catalog' %}">Explore courses</a></div>
+    {% endif %}
+</section>
+{% endblock %}
