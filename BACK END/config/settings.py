@@ -10,10 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import logging
+import re
 from datetime import timedelta
 from pathlib import Path
 import sys
 
+from django.core.exceptions import ImproperlyConfigured
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -32,6 +35,8 @@ if DEBUG:
     SECRET_KEY = env('SECRET_KEY', default='dev-only-secret-key-change-me')
 else:
     SECRET_KEY = env('SECRET_KEY')
+    if not SECRET_KEY:
+        raise ImproperlyConfigured('SECRET_KEY must be configured in the environment when DEBUG=False.')
 
 ALLOWED_HOSTS = env.list(
     'ALLOWED_HOSTS',
@@ -63,6 +68,7 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'corsheaders',
+    'drf_spectacular',
 
     'accounts',
     'courses',
@@ -126,7 +132,13 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT.mkdir(parents=True, exist_ok=True)
+STATICFILES_DIRS = []
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+}
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
 
@@ -149,13 +161,21 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
     'DEFAULT_THROTTLE_RATES': {
+        'anon': '60/minute',
+        'user': '120/minute',
         'login': '5/minute',
         'password_reset': '3/hour',
         'newsletter': '5/hour',
         'contact': '5/hour',
         'ai_path': '5/hour',
     },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'EXCEPTION_HANDLER': 'config.exceptions.custom_exception_handler',
 }
 
 SIMPLE_JWT = {
@@ -186,18 +206,43 @@ else:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = env('X_FRAME_OPTIONS', default='DENY')
 
+class SensitiveDataFilter(logging.Filter):
+    _SENSITIVE_KEYS = ('password', 'token', 'secret', 'api_key', 'authorization', 'refresh', 'access')
+    _EMAIL_RE = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
+
+    def filter(self, record):
+        message = record.getMessage()
+        record.msg = self._sanitize(message)
+        record.args = ()
+        return True
+
+    def _sanitize(self, value):
+        text = str(value)
+        text = re.sub(r'(?i)(password|token|secret|api[_-]?key|authorization)\s*[:=]\s*[^\s&]+', r'\1=[REDACTED]', text)
+        text = re.sub(r'(?i)Bearer\s+[A-Za-z0-9\-._~+/]+=*', 'Bearer [REDACTED]', text)
+        text = re.sub(r'(?i)(refresh|access)\s*[:=]\s*[^\s,\"]+', r'\1=[REDACTED]', text)
+        text = self._EMAIL_RE.sub('[EMAIL_REDACTED]', text)
+        return text
+
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'sensitive': {
+            '()': 'config.settings.SensitiveDataFilter',
+        },
+    },
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(message)s',
+            'format': '%(levelname)s %(asctime)s %(name)s %(message)s',
         },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+            'filters': ['sensitive'],
         },
     },
     'root': {
@@ -216,4 +261,13 @@ LOGGING = {
             'propagate': False,
         },
     },
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'CAITECH API',
+    'DESCRIPTION': 'CAITECH course, account, and admin operations API.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': r'/api/v1/',
 }

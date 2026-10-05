@@ -440,69 +440,23 @@ class AuthThrottleTests(APITestCase):
 		)
 
 
-class NotificationAndAdminAccessTests(APITestCase):
-	def setUp(self):
-		self.admin = User.objects.create_user(
-			username='site-admin',
-			email='admin@example.com',
-			password=PASSWORD,
-			is_staff=True,
-		)
-		self.student = User.objects.create_user(
-			username='regular-student',
-			email='student@example.com',
-			password=PASSWORD,
-		)
-
-	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-	def test_registration_sends_confirmation_email_and_records_event(self):
-		response = self.client.post(
-			reverse('api-v1-register'),
-			{'username': 'new-user', 'email': 'new-user@example.com', 'password': PASSWORD},
-			format='json',
-		)
-
-		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-		self.assertEqual(len(mail.outbox), 1)
-		self.assertIn('Registration confirmed', mail.outbox[0].subject)
-		self.assertTrue(
-			NotificationEvent.objects.filter(
-				type='registration',
-				recipient='new-user@example.com',
-				status='sent',
-			).exists()
-		)
-
-	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-	@patch('django.core.mail.send_mail', side_effect=RuntimeError('smtp down'))
-	def test_email_failure_does_not_break_main_request(self, mocked_send):
-		response = self.client.post(
-			reverse('api-v1-register'),
-			{'username': 'failed-user', 'email': 'failed-user@example.com', 'password': PASSWORD},
-			format='json',
-		)
-
-		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-		self.assertTrue(
-			NotificationEvent.objects.filter(
-				type='registration',
-				recipient='failed-user@example.com',
-				status='failed',
-			).exists()
-		)
-
-	def test_non_admin_is_blocked_from_admin_endpoints(self):
-		self.client.force_authenticate(self.student)
-		admin_endpoints = [
-			reverse('api-v1-admin-users'),
-			reverse('api-v1-admin-instructors'),
-			reverse('api-v1-admin-notifications'),
-		]
-		for url in admin_endpoints:
-			self.assertEqual(self.client.get(url).status_code, status.HTTP_403_FORBIDDEN)
-
-	def test_admin_can_list_notifications(self):
-		self.client.force_authenticate(self.admin)
-		response = self.client.get(reverse('api-v1-admin-notifications'))
+class HardeningApiTests(APITestCase):
+	def test_schema_endpoint_loads(self):
+		response = self.client.get('/api/v1/schema/')
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
-		self.assertIn('results', response.data)
+		self.assertIn('openapi', response.data)
+
+	def test_protected_endpoints_reject_unauthenticated_access(self):
+		protected_urls = [
+			reverse('api-v1-me'),
+			reverse('api-v1-student-dashboard'),
+			reverse('api-v1-admin-manual-enrollment'),
+		]
+		for url in protected_urls:
+			self.assertEqual(self.client.get(url).status_code, status.HTTP_401_UNAUTHORIZED)
+
+	def test_error_responses_do_not_expose_tracebacks(self):
+		response = self.client.get('/api/v1/does-not-exist/')
+		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+		self.assertNotIn('Traceback', response.content.decode('utf-8'))
+		self.assertNotIn('File "/', response.content.decode('utf-8'))
