@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 from .models import (
@@ -10,6 +11,8 @@ from .models import (
     LessonProgress,
     Section,
 )
+
+User = get_user_model()
 
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -218,6 +221,34 @@ class CourseReviewSerializer(serializers.ModelSerializer):
         if not 1 <= value <= 5:
             raise serializers.ValidationError('Rating must be between 1 and 5.')
         return value
+
+
+class ManualEnrollmentSerializer(serializers.ModelSerializer):
+    student = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all())
+    enrolled_by = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Enrollment
+        fields = [
+            'id', 'student', 'course', 'enrolled_by', 'note', 'enrolled_at', 'completed'
+        ]
+        read_only_fields = ['id', 'enrolled_by', 'enrolled_at', 'completed']
+
+
+class AdminEnrollmentSerializer(serializers.ModelSerializer):
+    student_username = serializers.CharField(source='student.username', read_only=True)
+    course_title = serializers.CharField(source='course.title', read_only=True)
+    course_slug = serializers.CharField(source='course.slug', read_only=True)
+    enrolled_by_username = serializers.CharField(source='enrolled_by.username', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Enrollment
+        fields = [
+            'id', 'student', 'student_username', 'course', 'course_title', 'course_slug',
+            'enrolled_by', 'enrolled_by_username', 'note', 'enrolled_at', 'completed'
+        ]
+        read_only_fields = ['id', 'enrolled_at', 'completed']
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):

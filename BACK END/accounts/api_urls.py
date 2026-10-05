@@ -2,10 +2,13 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
+    AdminInstructorListView,
+    AdminUserListView,
     InstructorRequestQueueView,
     InstructorRequestView,
     InstructorReviewView,
     LoginView,
+    NotificationEventListView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
     ProfileView,
@@ -22,4 +25,7 @@ urlpatterns = [
     path('instructor/request/', InstructorRequestView.as_view(), name='api-v1-instructor-request'),
     path('instructor/requests/', InstructorRequestQueueView.as_view(), name='api-v1-instructor-queue'),
     path('instructor/requests/<int:pk>/review/', InstructorReviewView.as_view(), name='api-v1-instructor-review'),
+    path('admin/users/', AdminUserListView.as_view(), name='api-v1-admin-users'),
+    path('admin/instructors/', AdminInstructorListView.as_view(), name='api-v1-admin-instructors'),
+    path('admin/notifications/', NotificationEventListView.as_view(), name='api-v1-admin-notifications'),
 ]

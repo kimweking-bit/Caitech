@@ -15,6 +15,7 @@ from .assessment_views import (
     QuestionDetailV1,
 )
 from .api_views import (
+    AdminEnrollmentListV1,
     CategoryDetailV1,
     CategoryListCreateV1,
     CourseCatalogV1,
@@ -23,8 +24,10 @@ from .api_views import (
     CourseReviewListCreateV1,
     CourseSectionsV1,
     EnrollmentProgressV1,
+    EnrollmentReportV1,
     LessonDetailV1,
     LessonResourcesV1,
+    ManualEnrollmentCreateV1,
     ResourceDetailV1,
     ResourceDownloadV1,
     SectionDetailV1,
@@ -47,6 +50,9 @@ urlpatterns = [
     path('submissions/<int:pk>/', AssignmentSubmissionDetailV1.as_view(), name='api-v1-assignment-submission-detail'),
     path('dashboard/', StudentDashboardV1.as_view(), name='api-v1-student-dashboard'),
     path('enrollments/<int:enrollment_pk>/progress/', EnrollmentProgressV1.as_view(), name='api-v1-enrollment-progress'),
+    path('admin/manual-enrol/', ManualEnrollmentCreateV1.as_view(), name='api-v1-admin-manual-enrollment'),
+    path('admin/enrollments/', AdminEnrollmentListV1.as_view(), name='api-v1-admin-enrollments'),
+    path('admin/reports/enrollments/', EnrollmentReportV1.as_view(), name='api-v1-admin-enrollment-report'),
     path('categories/', CategoryListCreateV1.as_view(), name='api-v1-category-list'),
     path('categories/<slug:slug>/', CategoryDetailV1.as_view(), name='api-v1-category-detail'),
     path('sections/<int:pk>/', SectionDetailV1.as_view(), name='api-v1-section-detail'),

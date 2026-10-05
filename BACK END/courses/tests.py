@@ -4,6 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.test import override_settings
@@ -281,6 +282,122 @@ class EnrollmentApiTests(APITestCase):
 		)
 
 		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class AdminEnrollmentOperationsTests(APITestCase):
+	def setUp(self):
+		self.admin = User.objects.create_user(
+			username='admin-enrolment-owner',
+			password=PASSWORD,
+			is_staff=True,
+		)
+		self.student = User.objects.create_user(
+			username='manual-enrolment-student',
+			password=PASSWORD,
+			email='manual-student@example.com',
+		)
+		self.instructor = User.objects.create_user(
+			username='manual-course-instructor',
+			password=PASSWORD,
+			is_student=False,
+			is_instructor=True,
+			is_verified_instructor=True,
+		)
+		self.category = Category.objects.create(name='Admin Ops', slug='admin-ops')
+		self.first_course = Course.objects.create(
+			title='Admin Course One',
+			slug='admin-course-one',
+			description='First admin-managed course',
+			category=self.category,
+			instructor=self.instructor,
+			is_free=True,
+		)
+		self.second_course = Course.objects.create(
+			title='Admin Course Two',
+			slug='admin-course-two',
+			description='Second admin-managed course',
+			category=self.category,
+			instructor=self.instructor,
+			is_free=True,
+		)
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	def test_manual_enrollment_tracks_admin_and_sends_confirmation_email(self):
+		self.client.force_authenticate(self.admin)
+		response = self.client.post(
+			reverse('api-v1-admin-manual-enrollment'),
+			{
+				'student': self.student.pk,
+				'course': self.first_course.pk,
+				'note': 'Sponsored by employer',
+			},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+		self.assertEqual(response.data['enrolled_by'], self.admin.pk)
+		self.assertEqual(response.data['note'], 'Sponsored by employer')
+		self.assertTrue(
+			Enrollment.objects.filter(student=self.student, course=self.first_course).exists()
+		)
+		self.assertEqual(len(mail.outbox), 1)
+		self.assertIn('Enrollment confirmed', mail.outbox[0].subject)
+
+	def test_manual_enrollment_rejects_duplicates(self):
+		self.client.force_authenticate(self.admin)
+		Enrollment.objects.create(student=self.student, course=self.first_course, enrolled_by=self.admin)
+		response = self.client.post(
+			reverse('api-v1-admin-manual-enrollment'),
+			{'student': self.student.pk, 'course': self.first_course.pk, 'note': 'Again'},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertEqual(Enrollment.objects.filter(student=self.student, course=self.first_course).count(), 1)
+
+	def test_admin_enrollment_report_filters_and_summarises(self):
+		self.client.force_authenticate(self.admin)
+		first = Enrollment.objects.create(student=self.student, course=self.first_course, enrolled_by=self.admin)
+		other_student = User.objects.create_user(username='other-report-student', password=PASSWORD)
+		second = Enrollment.objects.create(student=other_student, course=self.second_course, enrolled_by=self.admin)
+		first.enrolled_at = timezone.now() - timedelta(days=5)
+		first.save(update_fields=['enrolled_at'])
+		second.enrolled_at = timezone.now() - timedelta(days=1)
+		second.save(update_fields=['enrolled_at'])
+
+		response = self.client.get(
+			reverse('api-v1-admin-enrollment-report'),
+			{
+				'course': self.first_course.pk,
+				'start_date': (timezone.now() - timedelta(days=10)).date().isoformat(),
+				'end_date': (timezone.now() + timedelta(days=1)).date().isoformat(),
+			},
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertEqual(response.data['summary']['total_students'], 1)
+		self.assertEqual(response.data['summary']['total_courses'], 1)
+		self.assertIn(self.first_course.slug, response.data['summary']['enrolments_per_course'])
+		self.assertEqual(response.data['count'], 1)
+
+	def test_non_admin_is_blocked_from_admin_enrollment_endpoints(self):
+		self.client.force_authenticate(self.student)
+		self.assertEqual(
+			self.client.post(
+				reverse('api-v1-admin-manual-enrollment'),
+				{'student': self.student.pk, 'course': self.first_course.pk},
+				format='json',
+			).status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+		self.assertEqual(
+			self.client.get(reverse('api-v1-admin-enrollments')).status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
+		self.assertEqual(
+			self.client.get(reverse('api-v1-admin-enrollment-report')).status_code,
+			status.HTTP_403_FORBIDDEN,
+		)
 
 
 class LessonAccessTests(APITestCase):

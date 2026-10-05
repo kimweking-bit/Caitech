@@ -7,6 +7,8 @@ from rest_framework.validators import UniqueValidator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 
+from .models import NotificationEvent
+
 User = get_user_model()
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -73,3 +75,10 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class InstructorReviewSerializer(serializers.Serializer):
     approved = serializers.BooleanField()
+
+
+class NotificationEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationEvent
+        fields = ['id', 'type', 'recipient', 'status', 'error', 'created_at']
+        read_only_fields = ['id', 'created_at']

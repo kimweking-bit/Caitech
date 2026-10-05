@@ -5,15 +5,18 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
-from rest_framework import generics, permissions, status
+from rest_framework import filters, generics, permissions, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from .models import NotificationEvent
+from .services import send_notification_email
 from .serializers import (
     InstructorReviewSerializer,
+    NotificationEventSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     UserRegisterSerializer,
@@ -27,10 +30,35 @@ class LoginView(TokenObtainPairView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'login'
 
+
+class AdminPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegisterSerializer
     permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        send_notification_email(
+            notification_type='registration',
+            recipient=user.email,
+            subject='Registration confirmed',
+            message=(
+                f'Hello {user.username},\n\n'
+                'Your registration with CAITECH has been confirmed.\n'
+                'You can now log in and continue exploring your learning journey.'
+            ),
+            related_user=user,
+        )
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 class ProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
@@ -108,6 +136,39 @@ class InstructorRequestView(APIView):
 
 class InstructorQueuePagination(PageNumberPagination):
     page_size = 20
+
+
+class AdminUserListView(generics.ListAPIView):
+    queryset = User.objects.order_by('-date_joined')
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
+    pagination_class = AdminPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['username', 'email', 'first_name', 'last_name']
+    ordering_fields = ['date_joined', 'username', 'email']
+    ordering = ['-date_joined']
+
+
+class AdminInstructorListView(generics.ListAPIView):
+    queryset = User.objects.filter(is_instructor=True).order_by('-date_joined')
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
+    pagination_class = AdminPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['username', 'email', 'first_name', 'last_name']
+    ordering_fields = ['date_joined', 'username', 'email']
+    ordering = ['-date_joined']
+
+
+class NotificationEventListView(generics.ListAPIView):
+    queryset = NotificationEvent.objects.all().order_by('-created_at')
+    serializer_class = NotificationEventSerializer
+    permission_classes = [permissions.IsAdminUser]
+    pagination_class = AdminPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['type', 'recipient', 'status']
+    ordering_fields = ['created_at', 'type', 'recipient', 'status']
+    ordering = ['-created_at']
 
 
 class InstructorRequestQueueView(generics.ListAPIView):

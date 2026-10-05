@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
@@ -8,6 +10,8 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
 from rest_framework.test import APITestCase
+
+from .models import NotificationEvent
 
 
 User = get_user_model()
@@ -332,6 +336,74 @@ class InstructorApprovalApiTests(APITestCase):
 		self.assertFalse(self.user.is_verified_instructor)
 
 
+class NotificationAndAdminAccessTests(APITestCase):
+	def setUp(self):
+		self.admin = User.objects.create_user(
+			username='site-admin',
+			email='admin@example.com',
+			password=PASSWORD,
+			is_staff=True,
+		)
+		self.student = User.objects.create_user(
+			username='regular-student',
+			email='student@example.com',
+			password=PASSWORD,
+		)
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	def test_registration_sends_confirmation_email_and_records_event(self):
+		response = self.client.post(
+			reverse('api-v1-register'),
+			{'username': 'new-user', 'email': 'new-user@example.com', 'password': PASSWORD},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+		self.assertEqual(len(mail.outbox), 1)
+		self.assertIn('Registration confirmed', mail.outbox[0].subject)
+		self.assertTrue(
+			NotificationEvent.objects.filter(
+				type='registration',
+				recipient='new-user@example.com',
+				status='sent',
+			).exists()
+		)
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	@patch('django.core.mail.send_mail', side_effect=RuntimeError('smtp down'))
+	def test_email_failure_does_not_break_main_request(self, mocked_send):
+		response = self.client.post(
+			reverse('api-v1-register'),
+			{'username': 'failed-user', 'email': 'failed-user@example.com', 'password': PASSWORD},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+		self.assertTrue(
+			NotificationEvent.objects.filter(
+				type='registration',
+				recipient='failed-user@example.com',
+				status='failed',
+			).exists()
+		)
+
+	def test_non_admin_is_blocked_from_admin_endpoints(self):
+		self.client.force_authenticate(self.student)
+		admin_endpoints = [
+			reverse('api-v1-admin-users'),
+			reverse('api-v1-admin-instructors'),
+			reverse('api-v1-admin-notifications'),
+		]
+		for url in admin_endpoints:
+			self.assertEqual(self.client.get(url).status_code, status.HTTP_403_FORBIDDEN)
+
+	def test_admin_can_list_notifications(self):
+		self.client.force_authenticate(self.admin)
+		response = self.client.get(reverse('api-v1-admin-notifications'))
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertIn('results', response.data)
+
+
 class AuthThrottleTests(APITestCase):
 	@override_settings(
 		REST_FRAMEWORK={
@@ -366,3 +438,71 @@ class AuthThrottleTests(APITestCase):
 			self.client.post(reset_url, {'email': 'missing@example.com'}, format='json').status_code,
 			status.HTTP_429_TOO_MANY_REQUESTS,
 		)
+
+
+class NotificationAndAdminAccessTests(APITestCase):
+	def setUp(self):
+		self.admin = User.objects.create_user(
+			username='site-admin',
+			email='admin@example.com',
+			password=PASSWORD,
+			is_staff=True,
+		)
+		self.student = User.objects.create_user(
+			username='regular-student',
+			email='student@example.com',
+			password=PASSWORD,
+		)
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	def test_registration_sends_confirmation_email_and_records_event(self):
+		response = self.client.post(
+			reverse('api-v1-register'),
+			{'username': 'new-user', 'email': 'new-user@example.com', 'password': PASSWORD},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+		self.assertEqual(len(mail.outbox), 1)
+		self.assertIn('Registration confirmed', mail.outbox[0].subject)
+		self.assertTrue(
+			NotificationEvent.objects.filter(
+				type='registration',
+				recipient='new-user@example.com',
+				status='sent',
+			).exists()
+		)
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	@patch('django.core.mail.send_mail', side_effect=RuntimeError('smtp down'))
+	def test_email_failure_does_not_break_main_request(self, mocked_send):
+		response = self.client.post(
+			reverse('api-v1-register'),
+			{'username': 'failed-user', 'email': 'failed-user@example.com', 'password': PASSWORD},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+		self.assertTrue(
+			NotificationEvent.objects.filter(
+				type='registration',
+				recipient='failed-user@example.com',
+				status='failed',
+			).exists()
+		)
+
+	def test_non_admin_is_blocked_from_admin_endpoints(self):
+		self.client.force_authenticate(self.student)
+		admin_endpoints = [
+			reverse('api-v1-admin-users'),
+			reverse('api-v1-admin-instructors'),
+			reverse('api-v1-admin-notifications'),
+		]
+		for url in admin_endpoints:
+			self.assertEqual(self.client.get(url).status_code, status.HTTP_403_FORBIDDEN)
+
+	def test_admin_can_list_notifications(self):
+		self.client.force_authenticate(self.admin)
+		response = self.client.get(reverse('api-v1-admin-notifications'))
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertIn('results', response.data)
