@@ -1,6 +1,8 @@
 from django.db import IntegrityError, transaction
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
+from accounts.services import send_notification_email
+
 from .models import Category, Course, Lesson, Enrollment
 from .serializers import CategorySerializer, CourseSerializer, LessonSerializer, EnrollmentSerializer
 from .permissions import CanAccessLesson, IsVerifiedInstructor
@@ -51,9 +53,21 @@ class EnrollmentCreateView(generics.CreateAPIView):
 
         try:
             with transaction.atomic():
-                serializer.save(student=self.request.user)
+                enrollment = serializer.save(student=self.request.user)
         except IntegrityError as exc:
             raise ValidationError(error) from exc
+
+        send_notification_email(
+            'enrolment',
+            self.request.user.email,
+            'Enrollment confirmed',
+            (
+                f'Hello {self.request.user.username},\n\n'
+                f'You have been successfully enrolled in {enrollment.course.title}.\n'
+                'Your course access is now active.'
+            ),
+            related_user=self.request.user,
+        )
 
 
 class MyEnrollmentsView(generics.ListAPIView):

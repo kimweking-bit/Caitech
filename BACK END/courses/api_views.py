@@ -1,6 +1,7 @@
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
+from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.db.models import Avg, Count, Q, TextField
 from django.db.models.functions import Cast
@@ -12,6 +13,8 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from accounts.services import send_notification_email
 
 from .models import (
     Category,
@@ -33,15 +36,19 @@ from .permissions import (
     user_can_manage_course,
 )
 from .serializers import (
+    AdminEnrollmentSerializer,
     CourseResourceSerializer,
     CourseReviewSerializer,
     DashboardEnrollmentSerializer,
     LessonProgressSerializer,
+    ManualEnrollmentSerializer,
     SectionSerializer,
     VersionedCategorySerializer,
     VersionedCourseSerializer,
     VersionedLessonSerializer,
 )
+
+User = get_user_model()
 
 
 class CourseApiPagination(PageNumberPagination):
@@ -329,6 +336,95 @@ class StudentDashboardV1(APIView):
                 'previous': paginator.get_previous_link(),
             },
         })
+
+
+class ManualEnrollmentCreateV1(generics.CreateAPIView):
+    serializer_class = ManualEnrollmentSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        student = serializer.validated_data['student']
+        course = serializer.validated_data['course']
+        if Enrollment.objects.filter(student=student, course=course).exists():
+            raise ValidationError({'detail': 'This student is already enrolled in this course.'})
+
+        enrollment = serializer.save(enrolled_by=request.user)
+        send_notification_email(
+            'enrolment',
+            student.email,
+            'Enrollment confirmed',
+            (
+                f'Hello {student.username},\n\n'
+                f'You have been enrolled in {course.title}.\n'
+                'Your course access has been activated and you can continue learning.'
+            ),
+            related_user=student,
+        )
+        return Response(self.get_serializer(enrollment).data, status=201)
+
+
+class AdminEnrollmentListV1(generics.ListAPIView):
+    serializer_class = AdminEnrollmentSerializer
+    permission_classes = [permissions.IsAdminUser]
+    pagination_class = CourseApiPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['student__username', 'student__email', 'course__title', 'course__slug', 'note']
+    ordering_fields = ['enrolled_at', 'student__username', 'course__title']
+    ordering = ['-enrolled_at', '-pk']
+
+    def get_queryset(self):
+        queryset = Enrollment.objects.select_related('student', 'course', 'enrolled_by')
+        course_id = self.request.query_params.get('course')
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        start_date = self.request.query_params.get('start_date')
+        if start_date:
+            queryset = queryset.filter(enrolled_at__date__gte=start_date)
+        end_date = self.request.query_params.get('end_date')
+        if end_date:
+            queryset = queryset.filter(enrolled_at__date__lte=end_date)
+        return queryset.order_by('-enrolled_at', '-pk')
+
+
+class EnrollmentReportV1(generics.ListAPIView):
+    serializer_class = AdminEnrollmentSerializer
+    permission_classes = [permissions.IsAdminUser]
+    pagination_class = CourseApiPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['student__username', 'student__email', 'course__title', 'course__slug', 'note']
+    ordering_fields = ['enrolled_at', 'student__username', 'course__title']
+    ordering = ['-enrolled_at', '-pk']
+
+    def get_queryset(self):
+        queryset = Enrollment.objects.select_related('student', 'course', 'enrolled_by')
+        course_id = self.request.query_params.get('course')
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        start_date = self.request.query_params.get('start_date')
+        if start_date:
+            queryset = queryset.filter(enrolled_at__date__gte=start_date)
+        end_date = self.request.query_params.get('end_date')
+        if end_date:
+            queryset = queryset.filter(enrolled_at__date__lte=end_date)
+        return queryset.order_by('-enrolled_at', '-pk')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = self.get_serializer(page, many=True)
+        response = paginator.get_paginated_response(serializer.data)
+        summary = {
+            'total_students': queryset.values_list('student_id', flat=True).distinct().count(),
+            'total_courses': queryset.values_list('course_id', flat=True).distinct().count(),
+            'enrolments_per_course': dict(
+                queryset.values('course__slug').annotate(count=Count('id')).values_list('course__slug', 'count')
+            ),
+        }
+        response.data['summary'] = summary
+        return response
 
 
 class CourseReviewListCreateV1(generics.ListCreateAPIView):

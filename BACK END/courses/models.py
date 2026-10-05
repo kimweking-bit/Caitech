@@ -122,6 +122,14 @@ class Enrollment(models.Model):
         related_name='enrollments',
     )
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
+    enrolled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='enrolments_created',
+    )
+    note = models.TextField(blank=True, default='')
     enrolled_at = models.DateTimeField(auto_now_add=True)
     completed = models.BooleanField(default=False)
 
