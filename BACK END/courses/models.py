@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.core.validators import MinValueValidator
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -14,6 +15,10 @@ class Category(models.Model):
 
 
 class Course(models.Model):
+    class Currency(models.TextChoices):
+        KES = 'KES', 'Kenyan Shilling'
+        USD = 'USD', 'US Dollar'
+
     class CourseType(models.TextChoices):
         DIPLOMA = 'diploma', 'Diploma'
         CERTIFICATE = 'certificate', 'Certificate'
@@ -39,7 +44,25 @@ class Course(models.Model):
         related_name='courses_taught',
         limit_choices_to={'is_verified_instructor': True},
     )
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0)],
+    )
+    original_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+    )
+    currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.KES)
+    seat_capacity = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(1)],
+    )
     is_free = models.BooleanField(default=False)
     course_type = models.CharField(
         max_length=20,
@@ -93,6 +116,7 @@ class Lesson(models.Model):
     video_url = models.URLField(blank=True, null=True)
     is_preview = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=1)
+    duration_minutes = models.PositiveIntegerField(blank=True, null=True)
 
     class Meta:
         ordering = ['section__order', 'order', 'pk']

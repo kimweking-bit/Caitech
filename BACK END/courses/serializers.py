@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 from drf_spectacular.utils import extend_schema_field
+from django.db.models import Sum
 from .models import (
     Category,
     Course,
@@ -42,8 +43,11 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
     lessons = serializers.SerializerMethodField()
     category_name = serializers.CharField(source='category.name', read_only=True)
     instructor_username = serializers.CharField(source='instructor.username', read_only=True)
-    average_rating = serializers.FloatField(read_only=True, allow_null=True)
-    review_count = serializers.IntegerField(read_only=True)
+    average_rating = serializers.FloatField(read_only=True, allow_null=True, default=None)
+    review_count = serializers.IntegerField(read_only=True, default=0)
+    enrolled_count = serializers.IntegerField(read_only=True, default=0)
+    percent_booked = serializers.SerializerMethodField()
+    total_duration_hours = serializers.SerializerMethodField()
     course_type = serializers.ChoiceField(
         choices=Course.CourseType.choices,
         required=False,
@@ -65,12 +69,33 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = [
             'id', 'title', 'slug', 'description', 'category', 'category_name',
-            'instructor', 'instructor_username', 'price', 'is_free', 'created_at',
+            'instructor', 'instructor_username', 'price', 'original_price',
+            'currency', 'seat_capacity', 'is_free', 'created_at',
             'sections', 'lessons', 'average_rating', 'review_count',
+            'enrolled_count', 'percent_booked', 'total_duration_hours',
             'course_type', 'duration', 'delivery_modes', 'intake_status',
             'whatsapp_inquiry_url',
         ]
-        read_only_fields = ['instructor']
+        read_only_fields = [
+            'instructor', 'average_rating', 'review_count', 'enrolled_count',
+            'percent_booked', 'total_duration_hours',
+        ]
+
+    @extend_schema_field(serializers.FloatField(allow_null=True))
+    def get_percent_booked(self, course):
+        if not course.seat_capacity:
+            return None
+        enrolled_count = getattr(course, 'enrolled_count', None)
+        if enrolled_count is None:
+            enrolled_count = course.enrollments.count()
+        return round(enrolled_count * 100 / course.seat_capacity, 2)
+
+    @extend_schema_field(serializers.FloatField())
+    def get_total_duration_hours(self, course):
+        total_minutes = getattr(course, 'total_duration_minutes', None)
+        if total_minutes is None:
+            total_minutes = course.lessons.aggregate(total=Sum('duration_minutes'))['total']
+        return round((total_minutes or 0) / 60, 2)
 
     @extend_schema_field(LessonSerializer(many=True))
     def get_lessons(self, course):
@@ -96,7 +121,7 @@ class VersionedLessonSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lesson
-        fields = ['id', 'title', 'video_url', 'is_preview', 'order', 'section']
+        fields = ['id', 'title', 'video_url', 'is_preview', 'order', 'section', 'duration_minutes']
 
 
 class CourseResourceSerializer(serializers.ModelSerializer):

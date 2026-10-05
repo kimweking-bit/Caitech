@@ -58,6 +58,19 @@ python manage.py runserver
 | SECURE_HSTS_SECONDS | HSTS lifetime | 31536000 |
 | SECURE_PROXY_SSL_HEADER | Reverse proxy header for SSL | HTTP_X_FORWARDED_PROTO,https |
 | PAYMENT_PROVIDER_API_KEY | Payment provider secret | secret |
+| PAYMENT_REQUEST_TIMEOUT_SECONDS | Timeout for provider requests | 15 |
+| MPESA_ENVIRONMENT | Daraja environment | sandbox |
+| MPESA_BASE_URL | Daraja API base URL; sandbox by default | https://sandbox.safaricom.co.ke |
+| MPESA_CONSUMER_KEY | Daraja consumer key | provider-issued |
+| MPESA_CONSUMER_SECRET | Daraja consumer secret | provider-issued |
+| MPESA_SHORTCODE | Daraja business shortcode | provider-issued |
+| MPESA_PASSKEY | Daraja STK passkey | provider-issued |
+| MPESA_TRANSACTION_TYPE | Daraja STK transaction type | CustomerPayBillOnline |
+| MPESA_CALLBACK_SECRET | Secret used to sign transaction-bound callback URLs | generated random secret |
+| CARD_HOSTED_CHECKOUT_URL | Hosted card checkout URL (stub adapter) | provider URL |
+| CARD_WEBHOOK_SECRET | HMAC secret for hosted card callbacks | provider-issued |
+| PAYPAL_HOSTED_CHECKOUT_URL | Hosted PayPal checkout URL (stub adapter) | provider URL |
+| PAYPAL_WEBHOOK_SECRET | HMAC secret for PayPal callbacks | provider-issued |
 | AI_PROVIDER | AI provider name | openai_compatible |
 | AI_API_KEY | AI service API key | secret |
 | AI_MODEL | Model name | gpt-4o-mini |
@@ -101,6 +114,7 @@ DATABASE_URL=postgres://caitech:password@db:5432/caitech
 
 - Authentication: `/api/v1/auth/`
 - Courses and curriculum: `/api/v1/courses/`
+- Payments and course orders: `/api/v1/payments/`
 - AI learning path: `/api/v1/ai-path/`
 - Blog and site content: `/api/v1/blog/`, `/api/v1/newsletter/`, `/api/v1/contact/`
 - OpenAPI schema: `/api/v1/schema/`
@@ -138,6 +152,16 @@ DATABASE_URL=postgres://caitech:password@db:5432/caitech
 
 - `POST /api/v1/ai-path/`
 - `GET /api/v1/ai-path/responses/`
+
+### Course payments
+
+- `POST /api/v1/payments/orders/` creates an order for a course, optionally applying a coupon code.
+- `POST /api/v1/payments/orders/<order_reference>/initiate/` starts M-Pesa (`method` and `phone_number`), hosted card (`method: card`), or hosted PayPal (`method: paypal`) checkout.
+- `GET /api/v1/payments/orders/<order_reference>/status/` polls an order owned by the authenticated user.
+- `POST /api/v1/payments/callbacks/mpesa/<transaction_reference>/<token>/` receives a Daraja STK callback.
+- `POST /api/v1/payments/callbacks/card/` and `/api/v1/payments/callbacks/paypal/` receive HMAC-signed hosted-provider callbacks.
+
+The card and PayPal adapters currently create hosted redirect URLs but do not create real provider sessions. Configure their hosted URL and webhook secret when integrating a provider. Card numbers and CVV are never accepted or stored. Daraja callbacks are authenticated with a transaction-bound HMAC URL token because STK callbacks do not provide a native request signature; use HTTPS and keep `MPESA_CALLBACK_SECRET` private.
 
 ### Site content
 

@@ -52,6 +52,28 @@ CSRF_TRUSTED_ORIGINS = env.list(
 )
 
 PAYMENT_PROVIDER_API_KEY = env('PAYMENT_PROVIDER_API_KEY', default='')
+PAYMENT_REQUEST_TIMEOUT_SECONDS = env.int('PAYMENT_REQUEST_TIMEOUT_SECONDS', default=15)
+MPESA_ENVIRONMENT = env('MPESA_ENVIRONMENT', default='sandbox')
+if MPESA_ENVIRONMENT not in {'sandbox', 'production'}:
+    raise ImproperlyConfigured('MPESA_ENVIRONMENT must be sandbox or production.')
+MPESA_BASE_URL = env(
+    'MPESA_BASE_URL',
+    default=(
+        'https://sandbox.safaricom.co.ke'
+        if MPESA_ENVIRONMENT == 'sandbox'
+        else 'https://api.safaricom.co.ke'
+    ),
+)
+MPESA_CONSUMER_KEY = env('MPESA_CONSUMER_KEY', default='')
+MPESA_CONSUMER_SECRET = env('MPESA_CONSUMER_SECRET', default='')
+MPESA_SHORTCODE = env('MPESA_SHORTCODE', default='')
+MPESA_PASSKEY = env('MPESA_PASSKEY', default='')
+MPESA_TRANSACTION_TYPE = env('MPESA_TRANSACTION_TYPE', default='CustomerPayBillOnline')
+MPESA_CALLBACK_SECRET = env('MPESA_CALLBACK_SECRET', default='')
+CARD_HOSTED_CHECKOUT_URL = env('CARD_HOSTED_CHECKOUT_URL', default='')
+CARD_WEBHOOK_SECRET = env('CARD_WEBHOOK_SECRET', default='')
+PAYPAL_HOSTED_CHECKOUT_URL = env('PAYPAL_HOSTED_CHECKOUT_URL', default='')
+PAYPAL_WEBHOOK_SECRET = env('PAYPAL_WEBHOOK_SECRET', default='')
 AI_PROVIDER = env('AI_PROVIDER', default='')
 AI_API_KEY = env('AI_API_KEY', default='')
 AI_MODEL = env('AI_MODEL', default='')
@@ -273,5 +295,9 @@ SPECTACULAR_SETTINGS = {
     'ENUM_NAME_OVERRIDES': {
         'LearningPathResponseStatus': 'ai_path.models.LearningPathResponse.Status',
         'BlogPostStatus': 'site_content.models.Post.Status',
+        'OrderStatusEnum': 'payments.models.Order.Status',
+        'PaymentStatusEnum': 'payments.models.PaymentTransaction.Status',
+        'PaymentCallbackStatusEnum': 'payments.models.PaymentTransaction.CallbackStatus',
+        'PaymentProviderEnum': 'payments.models.PaymentTransaction.Provider',
     },
 }

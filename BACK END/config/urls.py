@@ -116,6 +116,7 @@ urlpatterns = [
     path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/v1/auth/', include('accounts.api_urls')),
     path('api/v1/courses/', include('courses.api_urls')),
+    path('api/v1/payments/', include('payments.api_urls')),
     path('api/v1/ai-path/', include('ai_path.api_urls')),
     path('api/v1/', include('site_content.api_urls')),
     path('api/courses/', include('courses.urls')),

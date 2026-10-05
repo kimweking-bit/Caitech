@@ -3,7 +3,7 @@ from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
-from django.db.models import Avg, Count, Q, TextField
+from django.db.models import Avg, Count, OuterRef, Q, Subquery, Sum, TextField
 from django.db.models.functions import Cast
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
@@ -90,11 +90,16 @@ class CourseCatalogV1(generics.ListCreateAPIView):
     ordering = ['-created_at', '-pk']
 
     def get_queryset(self):
+        lesson_duration = Lesson.objects.filter(course_id=OuterRef('pk')).order_by().values(
+            'course_id'
+        ).annotate(total=Sum('duration_minutes')).values('total')[:1]
         queryset = Course.objects.select_related('category', 'instructor').prefetch_related(
             'lessons', 'sections'
         ).annotate(
             average_rating=Avg('reviews__rating'),
             review_count=Count('reviews', distinct=True),
+            enrolled_count=Count('enrollments', distinct=True),
+            total_duration_minutes=Subquery(lesson_duration),
         )
         params = self.request.query_params
         category = params.get('category')
@@ -148,6 +153,11 @@ class CourseDetailV1(generics.RetrieveUpdateDestroyAPIView):
     ).annotate(
         average_rating=Avg('reviews__rating'),
         review_count=Count('reviews', distinct=True),
+        enrolled_count=Count('enrollments', distinct=True),
+        total_duration_minutes=Subquery(
+            Lesson.objects.filter(course_id=OuterRef('pk')).order_by().values('course_id')
+            .annotate(total=Sum('duration_minutes')).values('total')[:1]
+        ),
     )
     serializer_class = VersionedCourseSerializer
     permission_classes = [IsCourseOwnerOrStaffOrReadOnly]
