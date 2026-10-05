@@ -1,7 +1,10 @@
 from unittest.mock import patch
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.core.management import call_command
 from django.core import mail
 from django.core.cache import cache
 from django.test import override_settings
@@ -10,6 +13,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
 from rest_framework.test import APITestCase
+import yaml
 
 from .models import NotificationEvent
 
@@ -441,6 +445,47 @@ class AuthThrottleTests(APITestCase):
 
 
 class HardeningApiTests(APITestCase):
+	def test_openapi_schema_generates_without_diagnostics(self):
+		expected_paths = {
+			'/api/v1/ai-path/',
+			'/api/v1/auth/instructor/request/',
+			'/api/v1/auth/instructor/requests/{id}/review/',
+			'/api/v1/auth/password/reset/',
+			'/api/v1/auth/password/reset/confirm/',
+			'/api/v1/contact/',
+			'/api/v1/newsletter/subscribe/',
+			'/api/v1/courses/dashboard/',
+			'/api/v1/courses/enrollments/{enrollment_pk}/progress/',
+			'/api/v1/courses/{course_slug}/quizzes/',
+			'/api/v1/courses/quizzes/{id}/',
+			'/api/v1/courses/quizzes/{quiz_pk}/questions/',
+			'/api/v1/courses/questions/{id}/',
+			'/api/v1/courses/questions/{question_pk}/choices/',
+			'/api/v1/courses/choices/{id}/',
+			'/api/v1/courses/quizzes/{quiz_pk}/attempts/',
+			'/api/v1/courses/resources/{id}/download/',
+		}
+
+		with TemporaryDirectory() as output_dir:
+			schema_path = Path(output_dir) / 'schema.yml'
+			call_command(
+				'spectacular',
+				file=str(schema_path),
+				fail_on_warn=True,
+				validate=True,
+				verbosity=0,
+			)
+			schema = yaml.safe_load(schema_path.read_text(encoding='utf-8'))
+
+		self.assertTrue(expected_paths.issubset(schema['paths']))
+		course_quiz_operation = schema['paths'][
+			'/api/v1/courses/{course_slug}/quizzes/'
+		]['get']['operationId']
+		quiz_detail_operation = schema['paths'][
+			'/api/v1/courses/quizzes/{id}/'
+		]['get']['operationId']
+		self.assertNotEqual(course_quiz_operation, quiz_detail_operation)
+
 	def test_schema_endpoint_loads(self):
 		response = self.client.get('/api/v1/schema/')
 		self.assertEqual(response.status_code, status.HTTP_200_OK)

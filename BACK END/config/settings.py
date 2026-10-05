@@ -270,4 +270,8 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
     'SCHEMA_PATH_PREFIX': r'/api/v1/',
+    'ENUM_NAME_OVERRIDES': {
+        'LearningPathResponseStatus': 'ai_path.models.LearningPathResponse.Status',
+        'BlogPostStatus': 'site_content.models.Post.Status',
+    },
 }

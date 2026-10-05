@@ -69,6 +69,10 @@ class NewsletterSubscriptionSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ContactAcceptedSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
 class ContactInquirySerializer(serializers.ModelSerializer):
     website = serializers.CharField(
         write_only=True,

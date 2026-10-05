@@ -1,6 +1,7 @@
 import re
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 
 from courses.models import Course
 
@@ -70,6 +71,17 @@ class RecommendationItemSerializer(serializers.Serializer):
         return super().to_internal_value(data)
 
 
+class LearningPathRecommendationResultSerializer(serializers.Serializer):
+    course_id = serializers.IntegerField()
+    title = serializers.CharField()
+    slug = serializers.SlugField()
+    course_type = serializers.CharField(allow_blank=True)
+    duration = serializers.CharField(allow_blank=True)
+    delivery_modes = serializers.ListField(child=serializers.CharField())
+    intake_status = serializers.CharField(allow_blank=True)
+    reason = serializers.CharField()
+
+
 class AIRecommendationSchemaSerializer(serializers.Serializer):
     summary = serializers.CharField(min_length=1, max_length=2000)
     recommendations = RecommendationItemSerializer(many=True, allow_empty=True, max_length=5)
@@ -93,6 +105,7 @@ class LearningPathResultSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+    @extend_schema_field(LearningPathRecommendationResultSerializer(many=True))
     def get_recommendations(self, response):
         stored = response.recommendations or []
         course_ids = [item['course_id'] for item in stored]
@@ -114,6 +127,19 @@ class LearningPathResultSerializer(serializers.ModelSerializer):
                 'reason': item['reason'],
             })
         return results
+
+
+class LearningPathErrorDetailSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    detail = serializers.CharField()
+
+
+class LearningPathErrorSerializer(serializers.Serializer):
+    error = LearningPathErrorDetailSerializer()
+
+
+class LearningPathAcceptedSerializer(serializers.Serializer):
+    detail = serializers.CharField()
 
 
 class LearningPathAdminSerializer(serializers.ModelSerializer):

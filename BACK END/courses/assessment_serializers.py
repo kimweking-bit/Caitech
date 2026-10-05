@@ -141,6 +141,13 @@ class QuizAttemptResultSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class QuizAttemptPageSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True)
+    previous = serializers.URLField(allow_null=True)
+    results = QuizAttemptResultSerializer(many=True)
+
+
 class AssignmentWriteSerializer(serializers.ModelSerializer):
     max_points = serializers.DecimalField(max_digits=7, decimal_places=2, min_value=Decimal('0.01'))
 

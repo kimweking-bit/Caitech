@@ -77,6 +77,10 @@ class InstructorReviewSerializer(serializers.Serializer):
     approved = serializers.BooleanField()
 
 
+class DetailResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
 class NotificationEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationEvent

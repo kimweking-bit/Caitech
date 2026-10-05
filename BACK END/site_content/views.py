@@ -6,10 +6,12 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 
 from .models import ContactInquiry, NewsletterSubscription, Post
 from .serializers import (
     ContactInquirySerializer,
+    ContactAcceptedSerializer,
     NewsletterSubscribeSerializer,
     NewsletterSubscriptionSerializer,
     PostSerializer,
@@ -59,6 +61,10 @@ class NewsletterSubscribeV1(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'newsletter'
 
+    @extend_schema(
+        request=NewsletterSubscribeSerializer,
+        responses={201: NewsletterSubscriptionSerializer},
+    )
     def post(self, request):
         serializer = NewsletterSubscribeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -85,6 +91,13 @@ class ContactInquiryCreateV1(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'contact'
 
+    @extend_schema(
+        request=ContactInquirySerializer,
+        responses={
+            201: ContactInquirySerializer,
+            202: ContactAcceptedSerializer,
+        },
+    )
     def post(self, request):
         serializer = ContactInquirySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
