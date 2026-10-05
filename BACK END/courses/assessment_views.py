@@ -9,6 +9,11 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import (
+    PolymorphicProxySerializer,
+    extend_schema,
+    extend_schema_view,
+)
 
 from .assessment_permissions import (
     AssessmentAccessPermission,
@@ -24,6 +29,7 @@ from .assessment_serializers import (
     InstructorChoiceSerializer,
     InstructorQuizSerializer,
     InstructorQuestionSerializer,
+    QuizAttemptPageSerializer,
     QuizAttemptResultSerializer,
     QuizAttemptSubmitSerializer,
     QuizWriteSerializer,
@@ -51,6 +57,22 @@ class AssessmentPagination(PageNumberPagination):
     max_page_size = 100
 
 
+@extend_schema_view(
+    get=extend_schema(
+        operation_id='course_quiz_list',
+        responses={200: PolymorphicProxySerializer(
+            component_name='QuizRead',
+            serializers=[StudentQuizSerializer, InstructorQuizSerializer],
+            resource_type_field_name=None,
+            many=True,
+        )},
+    ),
+    post=extend_schema(
+        operation_id='course_quiz_create',
+        request=QuizWriteSerializer,
+        responses={201: InstructorQuizSerializer},
+    ),
+)
 class QuizListCreateV1(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = AssessmentPagination
@@ -59,6 +81,8 @@ class QuizListCreateV1(generics.ListCreateAPIView):
         return get_object_or_404(Course, slug=self.kwargs['course_slug'])
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Quiz.objects.none()
         course = self.get_course()
         if not user_can_manage_course(self.request.user, course) and not user_is_enrolled(
             self.request.user, course
@@ -69,6 +93,8 @@ class QuizListCreateV1(generics.ListCreateAPIView):
         ).order_by('created_at', 'pk')
 
     def get_serializer_class(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return QuizWriteSerializer if self.request.method == 'POST' else StudentQuizSerializer
         if self.request.method == 'POST':
             return QuizWriteSerializer
         if user_can_manage_course(self.request.user, self.get_course()):
@@ -82,11 +108,28 @@ class QuizListCreateV1(generics.ListCreateAPIView):
         serializer.save(course=course)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        operation_id='course_quiz_retrieve',
+        responses=PolymorphicProxySerializer(
+            component_name='QuizRead',
+            serializers=[StudentQuizSerializer, InstructorQuizSerializer],
+            resource_type_field_name=None,
+        ),
+    ),
+)
 class QuizDetailV1(generics.RetrieveUpdateDestroyAPIView):
     queryset = Quiz.objects.select_related('course').prefetch_related('questions__choices')
     permission_classes = [AssessmentAccessPermission]
 
+    def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Quiz.objects.none()
+        return super().get_queryset()
+
     def get_serializer_class(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return QuizWriteSerializer if self.request.method in {'PATCH', 'PUT', 'DELETE'} else StudentQuizSerializer
         if self.request.method in {'PATCH', 'PUT', 'DELETE'}:
             return QuizWriteSerializer
         if user_can_manage_course(self.request.user, self.get_object().course):
@@ -94,6 +137,20 @@ class QuizDetailV1(generics.RetrieveUpdateDestroyAPIView):
         return StudentQuizSerializer
 
 
+@extend_schema_view(
+    get=extend_schema(
+        responses={200: PolymorphicProxySerializer(
+            component_name='QuestionRead',
+            serializers=[StudentQuestionSerializer, InstructorQuestionSerializer],
+            resource_type_field_name=None,
+            many=True,
+        )},
+    ),
+    post=extend_schema(
+        request=QuestionWriteSerializer,
+        responses={201: InstructorQuestionSerializer},
+    ),
+)
 class QuizQuestionListCreateV1(generics.ListCreateAPIView):
     permission_classes = [AssessmentAccessPermission]
     pagination_class = AssessmentPagination
@@ -102,6 +159,8 @@ class QuizQuestionListCreateV1(generics.ListCreateAPIView):
         return get_object_or_404(Quiz.objects.select_related('course'), pk=self.kwargs['quiz_pk'])
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Question.objects.none()
         quiz = self.get_quiz()
         if not user_can_manage_course(self.request.user, quiz.course) and not user_is_enrolled(
             self.request.user, quiz.course
@@ -110,6 +169,8 @@ class QuizQuestionListCreateV1(generics.ListCreateAPIView):
         return Question.objects.filter(quiz=quiz).prefetch_related('choices')
 
     def get_serializer_class(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return QuestionWriteSerializer if self.request.method == 'POST' else StudentQuestionSerializer
         if self.request.method == 'POST':
             return QuestionWriteSerializer
         if user_can_manage_course(self.request.user, self.get_quiz().course):
@@ -118,6 +179,8 @@ class QuizQuestionListCreateV1(generics.ListCreateAPIView):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
+        if getattr(self, 'swagger_fake_view', False):
+            return context
         context['quiz'] = self.get_quiz()
         return context
 
@@ -128,11 +191,27 @@ class QuizQuestionListCreateV1(generics.ListCreateAPIView):
         serializer.save(quiz=quiz)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        responses=PolymorphicProxySerializer(
+            component_name='QuestionRead',
+            serializers=[StudentQuestionSerializer, InstructorQuestionSerializer],
+            resource_type_field_name=None,
+        ),
+    ),
+)
 class QuestionDetailV1(generics.RetrieveUpdateDestroyAPIView):
     queryset = Question.objects.select_related('quiz__course').prefetch_related('choices')
     permission_classes = [AssessmentAccessPermission]
 
+    def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Question.objects.none()
+        return super().get_queryset()
+
     def get_serializer_class(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return QuestionWriteSerializer if self.request.method in {'PATCH', 'PUT', 'DELETE'} else StudentQuestionSerializer
         if self.request.method in {'PATCH', 'PUT', 'DELETE'}:
             return QuestionWriteSerializer
         if user_can_manage_course(self.request.user, self.get_object().quiz.course):
@@ -140,6 +219,20 @@ class QuestionDetailV1(generics.RetrieveUpdateDestroyAPIView):
         return StudentQuestionSerializer
 
 
+@extend_schema_view(
+    get=extend_schema(
+        responses={200: PolymorphicProxySerializer(
+            component_name='ChoiceRead',
+            serializers=[StudentChoiceSerializer, InstructorChoiceSerializer],
+            resource_type_field_name=None,
+            many=True,
+        )},
+    ),
+    post=extend_schema(
+        request=ChoiceWriteSerializer,
+        responses={201: InstructorChoiceSerializer},
+    ),
+)
 class QuestionChoiceListCreateV1(generics.ListCreateAPIView):
     permission_classes = [AssessmentAccessPermission]
     pagination_class = AssessmentPagination
@@ -151,6 +244,8 @@ class QuestionChoiceListCreateV1(generics.ListCreateAPIView):
         )
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Choice.objects.none()
         question = self.get_question()
         if not user_can_manage_course(self.request.user, question.quiz.course) and not user_is_enrolled(
             self.request.user, question.quiz.course
@@ -160,10 +255,14 @@ class QuestionChoiceListCreateV1(generics.ListCreateAPIView):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
+        if getattr(self, 'swagger_fake_view', False):
+            return context
         context['question'] = self.get_question()
         return context
 
     def get_serializer_class(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return ChoiceWriteSerializer if self.request.method == 'POST' else StudentChoiceSerializer
         if self.request.method == 'POST':
             return ChoiceWriteSerializer
         if user_can_manage_course(self.request.user, self.get_question().quiz.course):
@@ -177,11 +276,27 @@ class QuestionChoiceListCreateV1(generics.ListCreateAPIView):
         serializer.save(question=question)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        responses=PolymorphicProxySerializer(
+            component_name='ChoiceRead',
+            serializers=[StudentChoiceSerializer, InstructorChoiceSerializer],
+            resource_type_field_name=None,
+        ),
+    ),
+)
 class ChoiceDetailV1(generics.RetrieveUpdateDestroyAPIView):
     queryset = Choice.objects.select_related('question__quiz__course')
     permission_classes = [AssessmentAccessPermission]
 
+    def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Choice.objects.none()
+        return super().get_queryset()
+
     def get_serializer_class(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return ChoiceWriteSerializer if self.request.method in {'PATCH', 'PUT', 'DELETE'} else StudentChoiceSerializer
         if self.request.method in {'PATCH', 'PUT', 'DELETE'}:
             return ChoiceWriteSerializer
         if user_can_manage_course(self.request.user, self.get_object().question.quiz.course):
@@ -189,6 +304,16 @@ class ChoiceDetailV1(generics.RetrieveUpdateDestroyAPIView):
         return StudentChoiceSerializer
 
 
+@extend_schema_view(
+    get=extend_schema(
+        request=None,
+        responses={200: QuizAttemptPageSerializer},
+    ),
+    post=extend_schema(
+        request=QuizAttemptSubmitSerializer,
+        responses={201: QuizAttemptResultSerializer},
+    ),
+)
 class QuizAttemptsV1(APIView):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = AssessmentPagination

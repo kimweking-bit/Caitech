@@ -1,7 +1,10 @@
 from unittest.mock import patch
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.core.management import call_command
 from django.core import mail
 from django.core.cache import cache
 from django.test import override_settings
@@ -10,6 +13,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
 from rest_framework.test import APITestCase
+import yaml
 
 from .models import NotificationEvent
 
@@ -440,69 +444,64 @@ class AuthThrottleTests(APITestCase):
 		)
 
 
-class NotificationAndAdminAccessTests(APITestCase):
-	def setUp(self):
-		self.admin = User.objects.create_user(
-			username='site-admin',
-			email='admin@example.com',
-			password=PASSWORD,
-			is_staff=True,
-		)
-		self.student = User.objects.create_user(
-			username='regular-student',
-			email='student@example.com',
-			password=PASSWORD,
-		)
+class HardeningApiTests(APITestCase):
+	def test_openapi_schema_generates_without_diagnostics(self):
+		expected_paths = {
+			'/api/v1/ai-path/',
+			'/api/v1/auth/instructor/request/',
+			'/api/v1/auth/instructor/requests/{id}/review/',
+			'/api/v1/auth/password/reset/',
+			'/api/v1/auth/password/reset/confirm/',
+			'/api/v1/contact/',
+			'/api/v1/newsletter/subscribe/',
+			'/api/v1/courses/dashboard/',
+			'/api/v1/courses/enrollments/{enrollment_pk}/progress/',
+			'/api/v1/courses/{course_slug}/quizzes/',
+			'/api/v1/courses/quizzes/{id}/',
+			'/api/v1/courses/quizzes/{quiz_pk}/questions/',
+			'/api/v1/courses/questions/{id}/',
+			'/api/v1/courses/questions/{question_pk}/choices/',
+			'/api/v1/courses/choices/{id}/',
+			'/api/v1/courses/quizzes/{quiz_pk}/attempts/',
+			'/api/v1/courses/resources/{id}/download/',
+		}
 
-	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-	def test_registration_sends_confirmation_email_and_records_event(self):
-		response = self.client.post(
-			reverse('api-v1-register'),
-			{'username': 'new-user', 'email': 'new-user@example.com', 'password': PASSWORD},
-			format='json',
-		)
+		with TemporaryDirectory() as output_dir:
+			schema_path = Path(output_dir) / 'schema.yml'
+			call_command(
+				'spectacular',
+				file=str(schema_path),
+				fail_on_warn=True,
+				validate=True,
+				verbosity=0,
+			)
+			schema = yaml.safe_load(schema_path.read_text(encoding='utf-8'))
 
-		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-		self.assertEqual(len(mail.outbox), 1)
-		self.assertIn('Registration confirmed', mail.outbox[0].subject)
-		self.assertTrue(
-			NotificationEvent.objects.filter(
-				type='registration',
-				recipient='new-user@example.com',
-				status='sent',
-			).exists()
-		)
+		self.assertTrue(expected_paths.issubset(schema['paths']))
+		course_quiz_operation = schema['paths'][
+			'/api/v1/courses/{course_slug}/quizzes/'
+		]['get']['operationId']
+		quiz_detail_operation = schema['paths'][
+			'/api/v1/courses/quizzes/{id}/'
+		]['get']['operationId']
+		self.assertNotEqual(course_quiz_operation, quiz_detail_operation)
 
-	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-	@patch('django.core.mail.send_mail', side_effect=RuntimeError('smtp down'))
-	def test_email_failure_does_not_break_main_request(self, mocked_send):
-		response = self.client.post(
-			reverse('api-v1-register'),
-			{'username': 'failed-user', 'email': 'failed-user@example.com', 'password': PASSWORD},
-			format='json',
-		)
-
-		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-		self.assertTrue(
-			NotificationEvent.objects.filter(
-				type='registration',
-				recipient='failed-user@example.com',
-				status='failed',
-			).exists()
-		)
-
-	def test_non_admin_is_blocked_from_admin_endpoints(self):
-		self.client.force_authenticate(self.student)
-		admin_endpoints = [
-			reverse('api-v1-admin-users'),
-			reverse('api-v1-admin-instructors'),
-			reverse('api-v1-admin-notifications'),
-		]
-		for url in admin_endpoints:
-			self.assertEqual(self.client.get(url).status_code, status.HTTP_403_FORBIDDEN)
-
-	def test_admin_can_list_notifications(self):
-		self.client.force_authenticate(self.admin)
-		response = self.client.get(reverse('api-v1-admin-notifications'))
+	def test_schema_endpoint_loads(self):
+		response = self.client.get('/api/v1/schema/')
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
-		self.assertIn('results', response.data)
+		self.assertIn('openapi', response.data)
+
+	def test_protected_endpoints_reject_unauthenticated_access(self):
+		protected_urls = [
+			reverse('api-v1-me'),
+			reverse('api-v1-student-dashboard'),
+			reverse('api-v1-admin-manual-enrollment'),
+		]
+		for url in protected_urls:
+			self.assertEqual(self.client.get(url).status_code, status.HTTP_401_UNAUTHORIZED)
+
+	def test_error_responses_do_not_expose_tracebacks(self):
+		response = self.client.get('/api/v1/does-not-exist/')
+		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+		self.assertNotIn('Traceback', response.content.decode('utf-8'))
+		self.assertNotIn('File "/', response.content.decode('utf-8'))

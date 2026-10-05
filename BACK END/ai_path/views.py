@@ -5,10 +5,13 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 
 from .models import LearningPathResponse
 from .serializers import (
 	LearningPathAdminSerializer,
+	LearningPathAcceptedSerializer,
+	LearningPathErrorSerializer,
 	LearningPathQuestionnaireSerializer,
 	LearningPathResultSerializer,
 )
@@ -26,6 +29,16 @@ class LearningPathQuestionnaireV1(APIView):
 	throttle_classes = [ScopedRateThrottle]
 	throttle_scope = 'ai_path'
 
+	@extend_schema(
+		request=LearningPathQuestionnaireSerializer,
+		responses={
+			201: LearningPathResultSerializer,
+			202: LearningPathAcceptedSerializer,
+			502: LearningPathErrorSerializer,
+			503: LearningPathErrorSerializer,
+			504: LearningPathErrorSerializer,
+		},
+	)
 	def post(self, request):
 		serializer = LearningPathQuestionnaireSerializer(data=request.data)
 		serializer.is_valid(raise_exception=True)

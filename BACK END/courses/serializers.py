@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.reverse import reverse
+from drf_spectacular.utils import extend_schema_field
 from .models import (
     Category,
     Course,
@@ -71,6 +72,7 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['instructor']
 
+    @extend_schema_field(LessonSerializer(many=True))
     def get_lessons(self, course):
         request = self.context.get('request')
         user = request.user if request else None
@@ -106,6 +108,7 @@ class CourseResourceSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'order', 'file', 'download_url', 'created_at']
         read_only_fields = ['id', 'download_url', 'created_at']
 
+    @extend_schema_field(serializers.URLField())
     def get_download_url(self, resource):
         return reverse(
             'api-v1-resource-download',
@@ -119,6 +122,7 @@ class CourseSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     instructor_username = serializers.CharField(source='instructor.username', read_only=True)
 
+    @extend_schema_field(LessonSerializer(many=True))
     def get_lessons(self, course):
         request = self.context.get('request')
         user = request.user if request else None
@@ -180,6 +184,15 @@ class LessonProgressSerializer(serializers.ModelSerializer):
         return lesson
 
 
+class EnrollmentProgressResponseSerializer(serializers.Serializer):
+    enrollment_id = serializers.IntegerField()
+    course_id = serializers.IntegerField()
+    total_lessons = serializers.IntegerField()
+    completed_lessons = serializers.IntegerField()
+    progress_percentage = serializers.FloatField()
+    lessons = LessonProgressSerializer(many=True)
+
+
 class DashboardEnrollmentSerializer(serializers.ModelSerializer):
     course_id = serializers.IntegerField(source='course.id', read_only=True)
     course_title = serializers.CharField(source='course.title', read_only=True)
@@ -195,18 +208,37 @@ class DashboardEnrollmentSerializer(serializers.ModelSerializer):
             'completed', 'completed_lessons', 'total_lessons', 'progress_percentage',
         ]
 
+    @extend_schema_field(serializers.IntegerField())
     def get_total_lessons(self, enrollment):
         return enrollment.course.lessons.count()
 
+    @extend_schema_field(serializers.IntegerField())
     def get_completed_lessons(self, enrollment):
         return enrollment.lesson_progress.filter(completed=True).count()
 
+    @extend_schema_field(serializers.FloatField())
     def get_progress_percentage(self, enrollment):
         total = self.get_total_lessons(enrollment)
         if total == 0:
             return 0
         completed = self.get_completed_lessons(enrollment)
         return round(completed * 100 / total, 2)
+
+
+class DashboardPaginationSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True)
+    previous = serializers.URLField(allow_null=True)
+
+
+class StudentDashboardResponseSerializer(serializers.Serializer):
+    my_courses = DashboardEnrollmentSerializer(many=True)
+    certificates = serializers.ListField(child=serializers.DictField())
+    pagination = DashboardPaginationSerializer()
+
+
+class ResourceErrorSerializer(serializers.Serializer):
+    detail = serializers.CharField()
 
 
 class CourseReviewSerializer(serializers.ModelSerializer):

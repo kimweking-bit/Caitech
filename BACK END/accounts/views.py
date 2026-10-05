@@ -10,12 +10,14 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import NotificationEvent
 from .services import send_notification_email
 from .serializers import (
     InstructorReviewSerializer,
+    DetailResponseSerializer,
     NotificationEventSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
@@ -73,6 +75,10 @@ class PasswordResetRequestView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'password_reset'
 
+    @extend_schema(
+        request=PasswordResetRequestSerializer,
+        responses={202: DetailResponseSerializer},
+    )
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -104,6 +110,10 @@ class PasswordResetConfirmView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'password_reset'
 
+    @extend_schema(
+        request=PasswordResetConfirmSerializer,
+        responses={200: DetailResponseSerializer},
+    )
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -116,6 +126,10 @@ class PasswordResetConfirmView(APIView):
 class InstructorRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        request=None,
+        responses={202: UserSerializer, 400: DetailResponseSerializer},
+    )
     def post(self, request):
         user = request.user
         if user.is_verified_instructor:
@@ -183,6 +197,10 @@ class InstructorRequestQueueView(generics.ListAPIView):
 class InstructorReviewView(APIView):
     permission_classes = [permissions.IsAdminUser]
 
+    @extend_schema(
+        request=InstructorReviewSerializer,
+        responses={200: UserSerializer, 404: DetailResponseSerializer},
+    )
     def post(self, request, pk):
         serializer = InstructorReviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

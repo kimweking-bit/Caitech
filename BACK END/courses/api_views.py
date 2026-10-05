@@ -13,6 +13,8 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 
 from accounts.services import send_notification_email
 
@@ -40,9 +42,12 @@ from .serializers import (
     CourseResourceSerializer,
     CourseReviewSerializer,
     DashboardEnrollmentSerializer,
+    EnrollmentProgressResponseSerializer,
     LessonProgressSerializer,
     ManualEnrollmentSerializer,
     SectionSerializer,
+    ResourceErrorSerializer,
+    StudentDashboardResponseSerializer,
     VersionedCategorySerializer,
     VersionedCourseSerializer,
     VersionedLessonSerializer,
@@ -240,6 +245,15 @@ class ResourceDetailV1(generics.RetrieveUpdateDestroyAPIView):
 class ResourceDownloadV1(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BINARY,
+                description='The requested resource file.',
+            ),
+            404: ResourceErrorSerializer,
+        },
+    )
     def get(self, request, pk):
         resource = get_object_or_404(
             CourseResource.objects.select_related('lesson__course'),
@@ -262,6 +276,13 @@ class ResourceDownloadV1(APIView):
         return [CanAccessResource()]
 
 
+@extend_schema_view(
+    get=extend_schema(responses={200: EnrollmentProgressResponseSerializer}),
+    post=extend_schema(
+        request=LessonProgressSerializer,
+        responses={200: LessonProgressSerializer},
+    ),
+)
 class EnrollmentProgressV1(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -311,6 +332,10 @@ class EnrollmentProgressV1(APIView):
         )
 
 
+@extend_schema(
+    request=None,
+    responses={200: StudentDashboardResponseSerializer},
+)
 class StudentDashboardV1(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
