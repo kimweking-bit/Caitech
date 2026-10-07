@@ -68,8 +68,9 @@ export const disciplines: readonly Discipline[] = [
     summary:
       "Drafting, documentation and digital design workflows used across architecture, engineering and construction.",
     tools: ["AutoCAD", "Revit", "Civil 3D", "BIM"],
-    image: "/images/home/discipline-cad.jpg",
-    imageAlt: "Student working on CAD drawings at a workstation",
+    image: "/images/home/discipline-cad-v2.jpg",
+    imageAlt:
+      "Architectural plans and drafting workspace for computer-aided design",
   },
   {
     id: "eng-fundamentals",
@@ -79,8 +80,9 @@ export const disciplines: readonly Discipline[] = [
     summary:
       "Core engineering literacy for production environments — analysis habits, technical drawing and practical method.",
     tools: ["Technical drawing", "Analysis", "Practical labs"],
-    image: "/images/home/discipline-engineering.jpg",
-    imageAlt: "Engineering students in a technical training environment",
+    image: "/images/home/discipline-engineering-v2.jpg",
+    imageAlt:
+      "Engineering lab technician working with technical equipment",
   },
   {
     id: "electronics",
@@ -90,8 +92,8 @@ export const disciplines: readonly Discipline[] = [
     summary:
       "Diagnosis, board-level practice and service workflows for electronics and mobile equipment.",
     tools: ["Diagnostics", "Board repair", "Mobile service"],
-    image: "/images/home/discipline-electronics.jpg",
-    imageAlt: "Technician repairing electronic equipment",
+    image: "/images/home/discipline-electronics-v2.jpg",
+    imageAlt: "Close-up of electronic circuit board and component work",
   },
   {
     id: "creative",
@@ -101,8 +103,8 @@ export const disciplines: readonly Discipline[] = [
     summary:
       "Creative practice supported by professional production tools and performance craft.",
     tools: ["Production", "Performance", "Studio craft"],
-    image: "/images/home/discipline-creative.jpg",
-    imageAlt: "Creative production and studio practice",
+    image: "/images/home/discipline-creative-v2.jpg",
+    imageAlt: "Art studio with paints and creative materials",
   },
   {
     id: "ict",
@@ -112,8 +114,8 @@ export const disciplines: readonly Discipline[] = [
     summary:
       "Networks, systems, cybersecurity foundations and administration for working infrastructure.",
     tools: ["Networking", "Linux", "Cybersecurity", "Systems"],
-    image: "/images/home/discipline-ict.jpg",
-    imageAlt: "ICT lab with networking and systems equipment",
+    image: "/images/home/discipline-ict-v2.jpg",
+    imageAlt: "Server room racks and network cabling for ICT infrastructure",
   },
   {
     id: "design-tech",
@@ -123,8 +125,9 @@ export const disciplines: readonly Discipline[] = [
     summary:
       "Applied design tools for product, interior and built-environment work.",
     tools: ["Interior design", "Visualization", "Design software"],
-    image: "/images/home/discipline-design.jpg",
-    imageAlt: "Design technology workstation and materials",
+    image: "/images/home/discipline-design-v2.jpg",
+    imageAlt:
+      "Modern interior design space with furniture and finishes",
   },
   {
     id: "building",
@@ -134,8 +137,8 @@ export const disciplines: readonly Discipline[] = [
     summary:
       "Construction documentation, quantities and digital methods for building projects.",
     tools: ["Construction docs", "QS", "Site practice"],
-    image: "/images/home/discipline-building.jpg",
-    imageAlt: "Building technology and construction documentation",
+    image: "/images/home/discipline-building-v2.jpg",
+    imageAlt: "Construction workers on a building site with hard hats",
   },
   {
     id: "data",
@@ -145,8 +148,8 @@ export const disciplines: readonly Discipline[] = [
     summary:
       "SQL, Python and analysis habits for operational and decision-ready data work.",
     tools: ["Python", "SQL", "Analytics"],
-    image: "/images/home/discipline-data.jpg",
-    imageAlt: "Data analytics work on screens",
+    image: "/images/home/discipline-data-v2.jpg",
+    imageAlt: "Analytics dashboards and charts on screens in a data workspace",
   },
   {
     id: "engineering",
@@ -156,8 +159,9 @@ export const disciplines: readonly Discipline[] = [
     summary:
       "Applied engineering tracks spanning civil, structural and related industry software.",
     tools: ["Civil", "Structural", "Project methods"],
-    image: "/images/home/discipline-engineering.jpg",
-    imageAlt: "Engineering students collaborating on technical work",
+    image: "/images/home/discipline-engineering-applied-v2.jpg",
+    imageAlt:
+      "City infrastructure and structural engineering at scale",
   },
   {
     id: "media",
@@ -167,8 +171,8 @@ export const disciplines: readonly Discipline[] = [
     summary:
       "Production tools and technical media pipelines for modern communication work.",
     tools: ["Media production", "Editing", "Communication tech"],
-    image: "/images/home/discipline-media.jpg",
-    imageAlt: "Media and communication technology production",
+    image: "/images/home/discipline-media-v2.jpg",
+    imageAlt: "Professional camera and media production equipment",
   },
 ] as const;
 
@@ -344,8 +348,8 @@ export const editorialArticles: readonly EditorialArticle[] = [
 
 export const homeImages = {
   hero: {
-    src: "/images/home/hero.jpg",
-    alt: "Students in a technical computer lab working at CAD workstations",
+    src: "/images/home/hero-lab-pcb-v4.jpg",
+    alt: "Engineer inspecting a multilayer PCB under warm lab lighting at CAITECH",
   },
   outcomes: {
     src: "/images/home/outcomes.jpg",

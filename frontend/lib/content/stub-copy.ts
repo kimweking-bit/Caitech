@@ -15,9 +15,11 @@ export const hero = {
   eyebrow: "CAITECH Global Institute",
   title: "Technical skill for work that ships.",
   lede:
-    "CAD, engineering, ICT, electronics, and construction technology — taught for drawings you can issue, systems you can configure, and problems you can solve on site.",
+    "CAD, engineering, ICT, electronics, and construction technology — taught for work that actually gets done.",
   primaryCta: { label: "Browse courses", href: "/courses" },
   secondaryCta: { label: "Explore AI Path", href: "/ai-path" },
+  meta: ["Nairobi CBD", "Practice-led", "Technical training"],
+  figureLabel: "Fig. 01 — Hands-on technical practice",
 } as const;
 
 export const positioning = {
@@ -33,6 +35,7 @@ export const schools = {
   eyebrow: "Learning areas",
   title: "Schools and disciplines",
   lede: "Study paths aligned to real technical domains — not a generic course marketplace.",
+  exploreCta: "Explore programmes",
   items: [
     {
       name: "Computer Aided Design & Technology",
