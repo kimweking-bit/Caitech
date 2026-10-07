@@ -117,13 +117,151 @@
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Tools grid micro-interaction — CSS only, transform + color          */
+/* ------------------------------------------------------------------ */
+
+.tool-cell {
+  --tool-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tool-duration: 300ms;
+  background-color: transparent;
+  border-color: inherit;
+  transition:
+    background-color var(--tool-duration) var(--tool-ease),
+    box-shadow var(--tool-duration) var(--tool-ease),
+    transform var(--tool-duration) var(--tool-ease);
+  transform-origin: center center;
+  will-change: transform, background-color;
+  z-index: 0;
+}
+
+.tool-cell__index {
+  transition:
+    color var(--tool-duration) var(--tool-ease),
+    letter-spacing var(--tool-duration) var(--tool-ease),
+    transform var(--tool-duration) var(--tool-ease);
+}
+
+.tool-cell__body {
+  transition: transform var(--tool-duration) var(--tool-ease);
+}
+
+.tool-cell__name {
+  transition: color var(--tool-duration) var(--tool-ease);
+}
+
+.tool-cell__label {
+  max-height: 0;
+  overflow: hidden;
+  transition:
+    opacity var(--tool-duration) var(--tool-ease),
+    max-height var(--tool-duration) var(--tool-ease),
+    color var(--tool-duration) var(--tool-ease),
+    transform var(--tool-duration) var(--tool-ease);
+  transform: translateY(4px);
+}
+
+.tool-cell__rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.5px;
+  background: var(--color-lime);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--tool-duration) var(--tool-ease);
+  pointer-events: none;
+}
+
+/* Active: hover (fine pointer) + keyboard focus */
+@media (hover: hover) and (pointer: fine) {
+  .tool-cell:hover {
+    z-index: 1;
+    background-color: var(--color-petrol);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-lime) 45%, transparent);
+  }
+
+  .tool-cell:hover .tool-cell__body {
+    transform: translateY(-5px);
+  }
+
+  .tool-cell:hover .tool-cell__index {
+    color: var(--color-lime);
+    letter-spacing: 0.14em;
+    transform: translateY(-2px);
+  }
+
+  .tool-cell:hover .tool-cell__name {
+    color: var(--color-ground);
+  }
+
+  .tool-cell:hover .tool-cell__label {
+    opacity: 1;
+    max-height: 2rem;
+    color: color-mix(in srgb, var(--color-ground) 70%, transparent);
+    transform: translateY(0);
+  }
+
+  .tool-cell:hover .tool-cell__rule {
+    transform: scaleX(1);
+  }
+}
+
+/* Keyboard / tap-focus equivalent (all pointers) */
+.tool-cell:focus-visible {
+  z-index: 1;
+  background-color: var(--color-petrol);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-lime) 55%, transparent);
+  outline: 2px solid var(--color-lime);
+  outline-offset: -2px;
+}
+
+.tool-cell:focus-visible .tool-cell__body {
+  transform: translateY(-5px);
+}
+
+.tool-cell:focus-visible .tool-cell__index {
+  color: var(--color-lime);
+  letter-spacing: 0.14em;
+  transform: translateY(-2px);
+}
+
+.tool-cell:focus-visible .tool-cell__name {
+  color: var(--color-ground);
+}
+
+.tool-cell:focus-visible .tool-cell__label {
+  opacity: 1;
+  max-height: 2rem;
+  color: color-mix(in srgb, var(--color-ground) 70%, transparent);
+  transform: translateY(0);
+}
+
+.tool-cell:focus-visible .tool-cell__rule {
+  transform: scaleX(1);
+}
+
+/* Reduced motion: colour only, no movement / sweep */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  .tool-cell,
+  .tool-cell__index,
+  .tool-cell__body,
+  .tool-cell__name,
+  .tool-cell__label,
+  .tool-cell__rule {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .tool-cell:hover .tool-cell__label,
+  .tool-cell:focus-visible .tool-cell__label {
+    opacity: 1;
+    max-height: 2rem;
+  }
+
+  .tool-cell:hover .tool-cell__rule,
+  .tool-cell:focus-visible .tool-cell__rule {
+    transform: scaleX(1) !important;
   }
 }
