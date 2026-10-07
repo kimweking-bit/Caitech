@@ -16,9 +16,8 @@ export const utilityNav: readonly NavItem[] = [
 export const footerNav = {
   learn: [
     { label: "Courses", href: "/courses" },
-    { label: "Categories", href: "/courses" },
+    { label: "Learning areas", href: "/#learning-areas" },
     { label: "AI Learning Path", href: "/ai-path" },
-    { label: "FAQ", href: "/faq" },
   ],
   institute: [
     { label: "About", href: "/about" },
@@ -35,14 +34,3 @@ export const footerNav = {
     { label: "Terms", href: "/terms" },
   ],
 } as const;
-
-/**
- * Footer contact — null means DO NOT RENDER that row.
- * Never ship placeholder emails, phones, or social URLs.
- */
-export const footerContact = {
-  email: null as string | null,
-  phone: null as string | null,
-  /** City/country only until a real address is approved. */
-  locationLine: "Kenya" as string | null,
-};

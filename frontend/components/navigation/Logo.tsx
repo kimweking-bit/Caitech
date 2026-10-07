@@ -1,24 +1,32 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
+/** Intrinsic logo aspect from source artwork (square mark). */
+const LOGO_INTRINSIC_W = 640;
+const LOGO_INTRINSIC_H = 640;
+
 type LogoProps = {
   className?: string;
-  /** Inverse for petrol/dark surfaces */
+  /** Inverse treatment for dark petrol surfaces */
   inverse?: boolean;
-  /** Compact mark for dense headers */
+  /** Compact height for dense chrome */
   compact?: boolean;
 };
 
 /**
- * Text lockup — approved Phase 1 brand treatment until a vector mark lands.
- * Never invent a decorative “African” icon.
+ * Real CAITECH institutional logo (circular mark + wordmark).
+ * White plate on dark surfaces so the original artwork remains legible.
  */
 export function Logo({ className, inverse = false, compact = false }: LogoProps) {
+  const height = compact ? 36 : 44;
+  const width = Math.round(height * (LOGO_INTRINSIC_W / LOGO_INTRINSIC_H));
+
   return (
     <Link
       href="/"
       className={cn(
-        "group inline-flex items-center gap-2.5 no-underline",
+        "group inline-flex items-center no-underline",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4",
         inverse ? "focus-visible:outline-lime" : "focus-visible:outline-petrol",
         className,
@@ -26,35 +34,21 @@ export function Logo({ className, inverse = false, compact = false }: LogoProps)
       aria-label="CAITECH Global Institute — home"
     >
       <span
-        aria-hidden
         className={cn(
-          "grid h-8 w-8 place-items-center border font-mono text-[10px] font-semibold tracking-wider",
-          inverse
-            ? "border-lime/80 bg-petrol-deep text-lime"
-            : "border-petrol bg-petrol text-lime",
+          "relative inline-flex items-center justify-center overflow-hidden",
+          inverse &&
+            "rounded-sm bg-white px-1.5 py-1 shadow-[0_0_0_1px_rgb(255_255_255/0.15)]",
         )}
       >
-        CAI
-      </span>
-      <span className="flex flex-col leading-none">
-        <span
-          className={cn(
-            "font-display text-[1.05rem] tracking-[-0.02em]",
-            inverse ? "text-ground" : "text-petrol",
-          )}
-        >
-          CAITECH
-        </span>
-        {!compact ? (
-          <span
-            className={cn(
-              "mt-0.5 font-mono text-[9px] uppercase tracking-[0.16em]",
-              inverse ? "text-ground/65" : "text-ink-muted",
-            )}
-          >
-            Global Institute
-          </span>
-        ) : null}
+        <Image
+          src="/brand/caitech-logo.png"
+          alt="CAITECH Global Institute"
+          width={width}
+          height={height}
+          className="h-auto w-auto object-contain"
+          style={{ height, width: "auto" }}
+          priority
+        />
       </span>
     </Link>
   );
