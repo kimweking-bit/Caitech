@@ -20,15 +20,15 @@ export function ToolsStrip() {
             tabIndex={0}
             className="tool-cell group relative flex flex-col justify-between gap-5 overflow-hidden border-line px-4 py-5 outline-none sm:px-5 border-r border-b [&:nth-child(2n)]:border-r-0 sm:[&:nth-child(2n)]:border-r sm:[&:nth-child(3n)]:border-r-0 md:[&:nth-child(3n)]:border-r md:[&:nth-child(4n)]:border-r-0 lg:[&:nth-child(4n)]:border-r lg:[&:nth-child(5n)]:border-r-0"
           >
-            <span className="tool-cell__index font-mono text-[10px] tabular-nums tracking-[0.08em] text-ink-muted">
+            <span className="tool-cell__index font-mono text-[10px] tabular-nums tracking-[0.08em]">
               {String(i + 1).padStart(2, "0")}
             </span>
 
             <div className="tool-cell__body min-w-0">
-              <span className="tool-cell__name block font-display text-lg leading-snug text-petrol md:text-xl">
+              <span className="tool-cell__name block font-display text-lg leading-snug md:text-xl">
                 {tool.name}
               </span>
-              <span className="tool-cell__label mt-1.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted opacity-0">
+              <span className="tool-cell__label font-mono text-[10px] uppercase tracking-[0.12em]">
                 {tool.label}
               </span>
             </div>
