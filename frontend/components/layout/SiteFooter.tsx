@@ -2,6 +2,7 @@ import Link from "next/link";
 import { footerNav } from "@/lib/content/nav";
 import { instituteContact } from "@/lib/content/institute";
 import { site } from "@/lib/content/stub-copy";
+import { NewsletterForm } from "@/components/content/NewsletterForm";
 import { Logo } from "@/components/navigation/Logo";
 import { Container } from "@/components/ui/Container";
 
@@ -96,7 +97,19 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 max-w-md border border-white/15 p-5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ground/55">
+            Newsletter
+          </p>
+          <p className="mt-2 text-sm text-ground/70">
+            Occasional notes on programmes and technical practice.
+          </p>
+          <div className="mt-4 [&_label]:text-ground/80 [&_input]:border-white/20 [&_input]:bg-petrol-deep [&_input]:text-ground [&_p]:text-ground/60">
+            <NewsletterForm compact />
+          </div>
+        </div>
+
+        <div className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-mono text-[11px] text-ground/50">
             © {year} {site.name}
           </p>

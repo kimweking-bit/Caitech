@@ -48,6 +48,8 @@ async function parseBody(res: Response): Promise<ApiErrorBody | null> {
 function messageFromBody(body: ApiErrorBody | null, fallback: string): string {
   if (!body) return fallback;
   if (typeof body.detail === "string") return body.detail;
+  const nested = body.error as { detail?: string; code?: string } | undefined;
+  if (nested && typeof nested.detail === "string") return nested.detail;
   // DRF field errors: { field: ["msg"] }
   for (const [k, v] of Object.entries(body)) {
     if (k === "code") continue;

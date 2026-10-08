@@ -200,3 +200,66 @@ export type PaymentInitiation = {
   redirect_url: string | null;
   message?: string;
 };
+
+
+/* ---- Site content ---- */
+
+export type BlogPost = {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string;
+  body: string;
+  featured_image: string | null;
+  published_at: string | null;
+  status: string;
+  categories: string[];
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type ContactPayload = {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  course?: number | null;
+  website?: string;
+};
+
+export type ContactAccepted = { detail: string };
+
+export type NewsletterSubscribe = { email: string };
+
+/* ---- AI learning path ---- */
+
+export type LearningPathPayload = {
+  goals: string;
+  current_skill_level: "beginner" | "intermediate" | "advanced";
+  interests: string;
+  hours_per_week: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+};
+
+export type LearningPathRecommendation = {
+  course_id: number;
+  title: string;
+  slug: string;
+  course_type: string;
+  duration: string;
+  delivery_modes: string[];
+  intake_status: string;
+  reason: string;
+};
+
+export type LearningPathResult = {
+  id: number;
+  recommendation_summary: string;
+  recommendations: LearningPathRecommendation[];
+  status: string;
+  created_at: string;
+};
