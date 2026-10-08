@@ -46,7 +46,7 @@ export type CourseListItem = {
   slug: string;
   short_description: string;
   description: string;
-  learning_outcomes: string;
+  learning_outcomes: string | string[];
   image: string | null;
   category: number | null;
   category_name: string | null;

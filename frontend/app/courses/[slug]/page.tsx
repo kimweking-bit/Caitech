@@ -106,7 +106,14 @@ export default async function CourseDetailPage({ params }: Props) {
   const sections = course.sections ?? [];
   const lessons = course.lessons ?? [];
   const lede = course.short_description || course.description || "";
-  const outcomes = course.learning_outcomes?.trim() || "";
+  const outcomesList: string[] = (() => {
+    const raw = course.learning_outcomes;
+    if (Array.isArray(raw)) return raw.map((o) => String(o).trim()).filter(Boolean);
+    if (typeof raw === "string" && raw.trim()) {
+      return raw.split(String.fromCharCode(10)).map((s) => s.replace(/^[-*•s]+/, "").trim()).filter(Boolean);
+    }
+    return [];
+  })();
 
   return (
     <>
@@ -218,7 +225,7 @@ export default async function CourseDetailPage({ params }: Props) {
               </section>
             ) : null}
 
-            {outcomes ? (
+            {outcomesList.length > 0 ? (
               <section aria-labelledby="outcomes-heading">
                 <h2
                   id="outcomes-heading"
@@ -227,7 +234,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   What you will learn
                 </h2>
                 <p className="mt-4 max-w-3xl whitespace-pre-line text-base leading-relaxed text-ink-muted">
-                  {outcomes}
+                  {outcomesList}
                 </p>
               </section>
             ) : null}
@@ -317,7 +324,7 @@ export default async function CourseDetailPage({ params }: Props) {
                 Next step
               </p>
               <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-                Enrolment and checkout open in a later release. Contact the
+                Use Add to cart or contact the
                 institute to join an intake.
               </p>
               <div className="mt-4">
