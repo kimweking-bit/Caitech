@@ -7,27 +7,26 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 
 /**
  * Full-bleed editorial homepage hero.
- * Photograph is the stage; copy sits left over a controlled gradient overlay.
- * Image layer stays fully opaque — readability comes only from .home-hero__scrim.
+ * Layers: photograph → gradient scrim (sibling) → left copy.
+ * LCP: priority + sizes=100vw + quality 90. No filters on the image.
  */
 export function HomeHero() {
   return (
     <section className="home-hero" aria-labelledby="home-hero-heading">
-      <div className="home-hero__media" aria-hidden={false}>
+      <div className="home-hero__media" aria-hidden="true">
         <Image
           src={homeImages.hero.src}
-          alt={homeImages.hero.alt}
+          alt=""
           fill
           priority
-          fetchPriority="high"
           quality={90}
           sizes="100vw"
           className="home-hero__img"
         />
-        <div className="home-hero__scrim" aria-hidden="true" />
+        <div className="home-hero__scrim" />
       </div>
 
-      <Container className="home-hero__inner" width="xl">
+      <Container className="home-hero__inner">
         <div className="home-hero__copy">
           <Eyebrow className="home-hero__eyebrow">{hero.eyebrow}</Eyebrow>
           <span className="home-hero__rule" aria-hidden="true" />
@@ -39,18 +38,12 @@ export function HomeHero() {
           <p className="home-hero__lede">{hero.lede}</p>
 
           <div className="home-hero__actions">
-            <Button
-              href={hero.primaryCta.href}
-              variant="lime"
-              size="lg"
-              className="home-hero__btn home-hero__btn--primary"
-            >
+            <Button href={hero.primaryCta.href} variant="lime" className="home-hero__btn">
               {hero.primaryCta.label}
             </Button>
             <Button
               href={hero.secondaryCta.href}
               variant="secondary"
-              size="lg"
               className="home-hero__btn home-hero__btn--secondary"
             >
               {hero.secondaryCta.label}
@@ -62,12 +55,8 @@ export function HomeHero() {
           <p className="home-hero__meta">
             {hero.meta.map((item, i) => (
               <span key={item}>
-                {i > 0 ? (
-                  <span className="home-hero__meta-sep" aria-hidden="true">
-                    ·
-                  </span>
-                ) : null}
-                <span>{item}</span>
+                {i > 0 ? <span className="home-hero__meta-sep" aria-hidden="true">·</span> : null}
+                {item}
               </span>
             ))}
           </p>

@@ -290,28 +290,35 @@
   position: absolute;
   inset: 0;
   z-index: 0;
+  /* Isolate paint so scrim never softens the bitmap */
+  isolation: isolate;
 }
 
 /* Image stays fully opaque — readability is only the scrim overlay */
 .home-hero__img {
   object-fit: cover;
-  object-position: 60% 40%;
-  opacity: 1;
-  filter: none;
+  /* Instructor + PCB workbench; keep electronics visible on the right */
+  object-position: 58% 38%;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .home-hero__scrim {
   position: absolute;
   inset: 0;
+  z-index: 1;
   pointer-events: none;
-  /* LEFT dark for type · CENTER soft · RIGHT stays rich */
+  /* LEFT dark for type · CENTER soft · RIGHT stays rich / detailed */
   background: linear-gradient(
     90deg,
-    color-mix(in oklab, var(--color-petrol-deep) 84%, transparent) 0%,
-    color-mix(in oklab, var(--color-petrol-deep) 66%, transparent) 24%,
-    color-mix(in oklab, var(--color-petrol-deep) 34%, transparent) 44%,
-    color-mix(in oklab, var(--color-petrol-deep) 10%, transparent) 62%,
-    transparent 76%
+    color-mix(in oklab, var(--color-petrol-deep) 86%, transparent) 0%,
+    color-mix(in oklab, var(--color-petrol-deep) 68%, transparent) 22%,
+    color-mix(in oklab, var(--color-petrol-deep) 32%, transparent) 42%,
+    color-mix(in oklab, var(--color-petrol-deep) 8%, transparent) 60%,
+    transparent 74%
   );
 }
 
@@ -320,29 +327,30 @@
   content: "";
   position: absolute;
   inset: auto 0 0 0;
-  height: 22%;
+  height: 18%;
   background: linear-gradient(
     0deg,
-    color-mix(in oklab, var(--color-petrol-deep) 44%, transparent) 0%,
+    color-mix(in oklab, var(--color-petrol-deep) 36%, transparent) 0%,
     transparent 100%
   );
 }
 
 .home-hero__inner {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   flex: 1 1 auto;
   width: 100%;
-  /* Lift content ~32–48px; breathing room under CTAs */
-  padding-block: clamp(2.5rem, 5vw, 3.75rem) clamp(1.75rem, 3.2vw, 2.5rem);
+  /* Lift content ~40px; air under CTAs — not 100vh */
+  padding-block: clamp(2.75rem, 5.5vw, 4rem) clamp(2.35rem, 4.2vw, 3.35rem);
 }
 
 .home-hero__copy {
   max-width: 34rem;
-  padding-bottom: clamp(1.85rem, 3.4vw, 2.75rem);
+  /* Extra air between buttons and foot meta */
+  padding-bottom: clamp(2.15rem, 3.8vw, 3.1rem);
 }
 
 .home-hero__eyebrow {
@@ -362,8 +370,8 @@
   margin: 0;
   max-width: 18ch;
   font-family: var(--font-display), "Newsreader", serif;
-  /* ~48–72px desktop — dominant, not oversized */
-  font-size: clamp(2.5rem, 5.2vw, 4.25rem);
+  /* ~40px → ~72px (64–78px desktop band) */
+  font-size: clamp(2.5rem, 4.4vw + 0.6rem, 4.5rem);
   font-weight: 500;
   line-height: 1.04;
   letter-spacing: -0.03em;
@@ -373,11 +381,13 @@
 
 .home-hero__lede {
   margin: 1.05rem 0 0;
-  /* ~500–540px → ~two lines on desktop */
-  max-width: 33rem;
-  font-size: clamp(0.98rem, 1.1vw, 1.1rem);
+  /* ~500–560px → ~two lines on desktop; do not spill into photo center */
+  max-width: min(33.5rem, 560px);
+  width: 100%;
+  font-size: clamp(0.98rem, 1.1vw, 1.08rem);
   line-height: 1.55;
   color: color-mix(in oklab, var(--color-ground) 90%, transparent);
+  text-wrap: pretty;
 }
 
 .home-hero__actions {
@@ -395,9 +405,8 @@
 
 .home-hero__btn--secondary {
   color: var(--color-ground) !important;
-  border-color: color-mix(in oklab, var(--color-ground) 42%, transparent) !important;
-  background: color-mix(in oklab, var(--color-petrol-deep) 28%, transparent) !important;
-  backdrop-filter: blur(4px);
+  border-color: color-mix(in oklab, var(--color-ground) 45%, transparent) !important;
+  background: color-mix(in oklab, var(--color-petrol-deep) 32%, transparent) !important;
 }
 
 .home-hero__btn--secondary:hover {
@@ -448,26 +457,26 @@
   }
 
   .home-hero__img {
-    object-position: 58% 38%;
+    object-position: 55% 36%;
   }
 
   .home-hero__scrim {
     background: linear-gradient(
       90deg,
-      color-mix(in oklab, var(--color-petrol-deep) 88%, transparent) 0%,
-      color-mix(in oklab, var(--color-petrol-deep) 68%, transparent) 34%,
-      color-mix(in oklab, var(--color-petrol-deep) 28%, transparent) 58%,
-      transparent 84%
+      color-mix(in oklab, var(--color-petrol-deep) 90%, transparent) 0%,
+      color-mix(in oklab, var(--color-petrol-deep) 70%, transparent) 32%,
+      color-mix(in oklab, var(--color-petrol-deep) 26%, transparent) 56%,
+      transparent 82%
     );
   }
 
   .home-hero__inner {
-    padding-block: clamp(2rem, 4vw, 2.75rem) clamp(1.5rem, 3vw, 2rem);
+    padding-block: clamp(2.15rem, 4.2vw, 3rem) clamp(1.85rem, 3.4vw, 2.5rem);
   }
 
   .home-hero__copy {
     max-width: 30rem;
-    padding-bottom: clamp(1.5rem, 3vw, 2.15rem);
+    padding-bottom: clamp(1.75rem, 3.2vw, 2.4rem);
   }
 
   .home-hero__title {
@@ -475,7 +484,7 @@
   }
 
   .home-hero__lede {
-    max-width: 30rem;
+    max-width: min(30rem, 100%);
   }
 }
 
@@ -528,8 +537,9 @@
   }
 
   .home-hero__lede {
-    font-size: 0.98rem;
+    font-size: clamp(0.9375rem, 2.6vw, 1rem); /* 15–16px */
     max-width: 36ch;
+    line-height: 1.5;
   }
 
   .home-hero__actions {
@@ -540,7 +550,7 @@
 
   .home-hero__btn {
     width: 100%;
-    min-height: 3.05rem;
+    min-height: 3.05rem; /* comfortable touch target */
   }
 
   .home-hero__foot {
