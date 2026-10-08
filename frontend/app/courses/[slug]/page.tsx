@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
+import { CoursePurchaseActions } from "@/components/courses/CoursePurchaseActions";
 import { getCourseBySlug } from "@/lib/api/courses";
 import { formatMoney, mediaUrl } from "@/lib/utils/format";
 import { ApiError } from "@/lib/api/client";
@@ -165,15 +166,12 @@ export default async function CourseDetailPage({ params }: Props) {
                     </p>
                   ) : null}
                 </div>
-                {course.is_available ? (
-                  <Button href="/contact" variant="lime">
-                    Enquire about this programme
-                  </Button>
-                ) : (
-                  <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted">
-                    Not currently available
-                  </p>
-                )}
+                <CoursePurchaseActions
+                  courseId={course.id}
+                  slug={course.slug}
+                  isAvailable={course.is_available}
+                  isFree={course.is_free}
+                />
                 {course.whatsapp_inquiry_url ? (
                   <Button href={course.whatsapp_inquiry_url} variant="secondary">
                     WhatsApp

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { primaryNav, utilityNav } from "@/lib/content/nav";
+import { primaryNav } from "@/lib/content/nav";
+import { AuthMobileLinks } from "@/components/auth/AuthHeaderActions";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/Button";
 
@@ -135,31 +136,7 @@ export function MobileNav() {
                 ))}
               </ul>
 
-              <div className="mt-6 flex flex-col gap-3 pb-4">
-                {utilityNav.map((item) =>
-                  item.emphasis === "primary" ? (
-                    <Button
-                      key={item.href}
-                      href={item.href}
-                      variant="lime"
-                      size="lg"
-                      className="w-full"
-                    >
-                      {item.label}
-                    </Button>
-                  ) : (
-                    <Button
-                      key={item.href}
-                      href={item.href}
-                      variant="secondary"
-                      size="lg"
-                      className="w-full"
-                    >
-                      {item.label}
-                    </Button>
-                  ),
-                )}
-              </div>
+              <AuthMobileLinks onNavigate={close} />
             </nav>
           </div>
         </>

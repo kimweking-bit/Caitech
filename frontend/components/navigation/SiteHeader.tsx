@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { primaryNav, utilityNav } from "@/lib/content/nav";
+import { primaryNav } from "@/lib/content/nav";
+import { AuthHeaderActions } from "@/components/auth/AuthHeaderActions";
 import { Logo } from "@/components/navigation/Logo";
 import { MobileNav } from "@/components/navigation/MobileNav";
 import { Button } from "@/components/ui/Button";
@@ -35,22 +36,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden md:flex md:items-center md:gap-2">
-          {utilityNav.map((item) =>
-            item.emphasis === "primary" ? (
-              <Button key={item.href} href={item.href} variant="lime" size="sm">
-                {item.label}
-              </Button>
-            ) : (
-              <Button
-                key={item.href}
-                href={item.href}
-                variant="ghost"
-                size="sm"
-              >
-                {item.label}
-              </Button>
-            ),
-          )}
+          <AuthHeaderActions />
         </div>
 
         <MobileNav />

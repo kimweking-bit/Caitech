@@ -99,3 +99,104 @@ export type CourseCardModel = {
   rating: number | null;
   reviewCount: number;
 };
+
+
+/* ---- Auth (accounts serializers) ---- */
+
+export type AuthUser = {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string | null;
+  is_student: boolean;
+  is_instructor: boolean;
+  is_verified_instructor: boolean;
+  is_staff: boolean;
+  bio: string;
+  profile_picture: string | null;
+};
+
+export type AuthTokens = {
+  access: string;
+  refresh: string;
+};
+
+export type RegisterPayload = {
+  username: string;
+  email: string;
+  password: string;
+};
+
+/* ---- Commerce (payments serializers) ---- */
+
+export type CartLine = {
+  course_id: number;
+  title: string;
+  slug: string;
+  image: string | null;
+  currency: string;
+  unit_price: string;
+  original_price: string | null;
+};
+
+export type Cart = {
+  items: CartLine[];
+  currency: string;
+  subtotal: string;
+  discount_amount: string;
+  fee_amount: string;
+  total: string;
+  coupon_code: string;
+};
+
+export type CheckoutPayload = {
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+};
+
+export type OrderItem = {
+  course_title: string;
+  unit_price: string;
+  currency: string;
+  quantity: number;
+};
+
+export type PaymentTransaction = {
+  reference: string;
+  provider: string;
+  status: string;
+  amount: string;
+  currency: string;
+  redirect_url: string | null;
+};
+
+export type Order = {
+  reference: string;
+  status: string;
+  currency: string;
+  subtotal: string;
+  discount_amount: string;
+  fee_amount: string;
+  total: string;
+  expires_at: string | null;
+  coupon_code: string;
+  items: OrderItem[];
+  latest_transaction: PaymentTransaction | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PaymentMethod = "mpesa" | "card" | "paypal";
+
+export type PaymentInitiation = {
+  order_reference: string;
+  order_status: string;
+  transaction_reference: string;
+  provider: string;
+  payment_status: string;
+  redirect_url: string | null;
+  message?: string;
+};

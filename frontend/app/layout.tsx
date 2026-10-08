@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Newsreader, Source_Sans_3 } from "next/font/google";
 import { PublicShell } from "@/components/layout/PublicShell";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { site } from "@/lib/content/stub-copy";
 import { getSiteUrl } from "@/lib/seo/site";
 import "./globals.css";
@@ -76,7 +77,9 @@ export default function RootLayout({
       className={`${display.variable} ${body.variable} ${mono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col font-sans antialiased">
-        <PublicShell>{children}</PublicShell>
+        <AuthProvider>
+          <PublicShell>{children}</PublicShell>
+        </AuthProvider>
       </body>
     </html>
   );
