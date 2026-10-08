@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { getStudentDashboard } from "@/lib/api/lms";
 import { ApiError } from "@/lib/api/client";
 import { mediaUrl } from "@/lib/utils/format";
+import { displayTitle } from "@/lib/utils/display";
 import type { DashboardEnrollment } from "@/types/api";
 import Image from "next/image";
 
@@ -116,7 +117,7 @@ function AccountHome() {
                       ) : null}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-display text-lg text-petrol">{c.course_title}</p>
+                      <p className="font-display text-lg text-petrol">{displayTitle(c.course_title)}</p>
                       <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted">
                         {c.completed
                           ? "Completed"

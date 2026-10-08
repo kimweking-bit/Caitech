@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { CoursePurchaseActions } from "@/components/courses/CoursePurchaseActions";
 import { getCourseBySlug } from "@/lib/api/courses";
 import { formatMoney, mediaUrl } from "@/lib/utils/format";
+import { displayCategory, displayTitle } from "@/lib/utils/display";
 import { ApiError } from "@/lib/api/client";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -94,12 +95,15 @@ export default async function CourseDetailPage({ params }: Props) {
       : null);
 
   const meta = [
+    durationLabel ? { label: "Duration", value: durationLabel } : null,
     course.level ? { label: "Level", value: course.level } : null,
     delivery ? { label: "Delivery", value: delivery } : null,
-    durationLabel ? { label: "Duration", value: durationLabel } : null,
     course.course_type ? { label: "Type", value: course.course_type } : null,
     course.intake_status
       ? { label: "Intake", value: course.intake_status }
+      : null,
+    course.instructor_username
+      ? { label: "Instructor", value: course.instructor_username }
       : null,
   ].filter(Boolean) as { label: string; value: string }[];
 
@@ -110,7 +114,7 @@ export default async function CourseDetailPage({ params }: Props) {
     const raw = course.learning_outcomes;
     if (Array.isArray(raw)) return raw.map((o) => String(o).trim()).filter(Boolean);
     if (typeof raw === "string" && raw.trim()) {
-      return raw.split(String.fromCharCode(10)).map((s) => s.replace(/^[-*•s]+/, "").trim()).filter(Boolean);
+      return raw.split(String.fromCharCode(10)).map((s) => s.replace(/^[-*•\s]+/, "").trim()).filter(Boolean);
     }
     return [];
   })();
@@ -131,13 +135,13 @@ export default async function CourseDetailPage({ params }: Props) {
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
             <div>
               <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-                {[course.category_name, course.course_type]
+                {[displayCategory(course.category_name), course.course_type]
                   .filter(Boolean)
                   .join(" · ") || "Programme"}
               </p>
               <div className="mt-4 mb-5 h-px w-12 bg-lime" aria-hidden />
               <h1 className="font-display text-4xl text-balance text-petrol md:text-5xl">
-                {course.title}
+                {displayTitle(course.title)}
               </h1>
               {lede ? (
                 <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-muted md:text-lg">
@@ -274,8 +278,11 @@ export default async function CourseDetailPage({ params }: Props) {
                   id="lessons-heading"
                   className="font-display text-2xl text-petrol"
                 >
-                  Lessons
+                  Free previews
                 </h2>
+                <p className="mt-2 text-sm text-ink-muted">
+                  Sample lessons available before enrolment. The full programme is in the structure above.
+                </p>
                 <ul className="mt-6 list-none space-y-2 p-0">
                   {lessons
                     .slice()

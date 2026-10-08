@@ -23,10 +23,25 @@ class LessonSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'video_url', 'is_preview', 'order']
 
 
+class SectionLessonOutlineSerializer(serializers.ModelSerializer):
+    """Public curriculum outline — titles/meta only, no gated media."""
+
+    class Meta:
+        model = Lesson
+        fields = ['id', 'title', 'order', 'duration_minutes', 'is_preview']
+
+
 class SectionSerializer(serializers.ModelSerializer):
+    lessons = serializers.SerializerMethodField()
+
     class Meta:
         model = Section
-        fields = ['id', 'title', 'order']
+        fields = ['id', 'title', 'order', 'lessons']
+
+    @extend_schema_field(SectionLessonOutlineSerializer(many=True))
+    def get_lessons(self, section):
+        qs = section.lessons.all().order_by('order')
+        return SectionLessonOutlineSerializer(qs, many=True, context=self.context).data
 
     def validate_order(self, value):
         course = getattr(self.instance, 'course', None) or self.context.get('course')

@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/api/client";
 import { asList, getAssignment, getCourseAssignments, getCourseQuizzes, getCourseResources, getCourseSections, getEnrollmentProgress, getLesson, getQuiz, getSectionLessons, getStudentDashboard, listQuizAttempts, listSubmissions, markLessonProgress, resourceDownloadPath, submitAssignment, submitQuizAttempt, submitCourseReview } from "@/lib/api/lms";
 import type { Assignment, AssignmentSubmission, CourseLesson, CourseResource, CourseSection, DashboardEnrollment, EnrollmentProgress, Quiz, QuizAttempt } from "@/types/api";
 import { getAccessToken } from "@/lib/auth/tokens";
+import { displayTitle } from "@/lib/utils/display";
 
 type Tab = "lessons" | "resources" | "quizzes" | "assignments";
 
@@ -84,7 +85,7 @@ function LearnInner() {
   return (
     <div className="border-t border-line"><Container className="py-8 md:py-10">
       <p className="mb-4"><Link href="/account" className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-muted hover:text-petrol">← My courses</Link></p>
-      <h1 className="font-display text-3xl text-petrol md:text-4xl">{enrollment.course_title}</h1>
+      <h1 className="font-display text-3xl text-petrol md:text-4xl">{displayTitle(enrollment.course_title)}</h1>
       <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted">{progress ? (progress.completed_lessons + "/" + progress.total_lessons + " lessons · " + pct + "%") : (String(pct) + "%")}</p>
       <div className="mt-3 h-1.5 w-full max-w-md bg-line"><div className="h-full bg-lime" style={{ width: Math.min(100, Number(pct) || 0) + "%" }} /></div>
       {msg ? <p className="mt-4 text-sm text-ink-muted" role="status">{msg}</p> : null}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { CourseCardModel } from "@/types/api";
 import { cn } from "@/lib/utils/cn";
+import { displayTitle } from "@/lib/utils/display";
 
 export function CourseCard({
   course,
@@ -59,7 +60,7 @@ export function CourseCard({
           </div>
 
           <h3 className="font-display text-[1.35rem] leading-snug text-petrol group-hover:text-petrol-deep md:text-xl">
-            {course.title}
+            {displayTitle(course.title)}
           </h3>
 
           {course.description ? (
