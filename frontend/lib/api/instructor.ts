@@ -5,8 +5,9 @@ import type { CourseListItem, PaginatedResponse } from "@/types/api";
 export async function getInstructorCourses(
   page = 1,
 ): Promise<PaginatedResponse<CourseListItem>> {
-  const q = page > 1 ? `?page=${page}` : "";
-  return apiFetch<PaginatedResponse<CourseListItem>>(`/instructor/courses/${q}`, {
+  const path =
+    page > 1 ? `/instructor/courses/?page=${page}` : "/instructor/courses/";
+  return apiFetch<PaginatedResponse<CourseListItem>>(path, {
     auth: true,
     cache: "no-store",
   });

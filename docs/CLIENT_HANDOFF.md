@@ -1,16 +1,68 @@
 # CAITECH — client handoff (waiting on client)
 
-Platform is built and demo-ready. Production go-live needs:
+The platform is built, demo-ready, and production-integration ready.
+Only external credentials and official CAITECH content remain.
 
-## Credentials
-- SMTP email: EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS, DEFAULT_FROM_EMAIL, CONTACT_NOTIFY_EMAIL
-- M-Pesa / card: keys already listed in backend/.env.example
-- WhatsApp Meta: WHATSAPP_ENABLED=true, WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_NOTIFY_TO
-- AI path provider API key (see .env.example / ai_path settings)
-- Production Django: SECRET_KEY, DEBUG=False, ALLOWED_HOSTS, DB, CORS_ALLOWED_ORIGINS, FRONTEND_URL
+## DONE (local / demo)
 
-## Official content (admin/import — no frontend rewrite)
-Courses, curriculum, fees, media, instructors, blog, branding, real contact details.
+- Public website, courses, curriculum, LMS
+- Auth (register, login, logout, password reset structure)
+- Student / instructor / admin surfaces
+- Instructor assigned-courses API (`GET /api/v1/instructor/courses/`)
+- Cart, checkout, order creation, payment provider hooks + callbacks
+- Email infrastructure (console in dev; SMTP via env in prod)
+- WhatsApp staff notify stub (Meta Cloud API, env-gated)
+- AI Learning Path (published courses only; needs provider key for live AI)
+- Demo seed dataset (do not clear unless intentional)
 
-## Demo
-Keep seed_demo data. Do not run clear_demo unless intentional. Real content uses non-demo- slugs.
+## WAITING FOR CLIENT — credentials
+
+Copy `backend/.env.example` → `backend/.env` and fill:
+
+### Production Django
+- `SECRET_KEY` (strong random)
+- `DEBUG=False`
+- `ALLOWED_HOSTS`
+- Database URL / DB_* settings
+- `CORS_ALLOWED_ORIGINS`
+- `CSRF_TRUSTED_ORIGINS`
+- `FRONTEND_URL` (public Next.js URL)
+- `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_SITE_URL` on frontend
+
+### Email (SMTP)
+- `EMAIL_HOST`, `EMAIL_PORT`
+- `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`
+- `EMAIL_USE_TLS` / `EMAIL_USE_SSL`
+- `DEFAULT_FROM_EMAIL`
+- `CONTACT_NOTIFY_EMAIL` (staff inbox for contact form)
+- Set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend` for production
+
+### M-Pesa / card payments
+- All `MPESA_*` / payment provider keys already listed in `backend/.env.example`
+- Callback / return URLs must match deployed backend host
+
+### WhatsApp (Meta Cloud API)
+- `WHATSAPP_ENABLED=true`
+- `WHATSAPP_ACCESS_TOKEN`
+- `WHATSAPP_PHONE_NUMBER_ID`
+- `WHATSAPP_NOTIFY_TO` (comma-separated staff numbers)
+- Optional: `WHATSAPP_API_VERSION`
+
+### AI Learning Path
+- `AI_PROVIDER`, `AI_API_KEY`, `AI_API_BASE_URL` (and any model id vars in `.env.example`)
+
+## WAITING FOR CLIENT — official content
+
+Load via Django admin / import (no frontend rewrite required):
+
+- Official programmes, fees, duration, intakes, categories
+- Curriculum modules / lessons / media / videos
+- Quizzes and assignments
+- Instructor profiles
+- Blog posts, contact details, branding assets
+- Real testimonials only when available
+
+## Demo data
+
+Keep `seed_demo` for demos and QA. Do **not** run `clear_demo` unless intentionally wiping demo.
+Real CAITECH content should use non-`demo-` slugs.

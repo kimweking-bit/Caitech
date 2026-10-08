@@ -57,6 +57,13 @@ function LoginForm() {
         <p className="mt-3 text-sm text-ink-muted">
           Access your cart, orders, and programme enrolments.
         </p>
+        {process.env.NODE_ENV === "development" ? (
+          <p className="mt-4 border border-line bg-canvas px-3 py-2 font-mono text-[11px] leading-relaxed text-ink-muted">
+            Demo (local): demo.student · demo.instructor · demo.admin
+            <br />
+            Password: CaitechDemo2026!
+          </p>
+        ) : null}
 
         <form onSubmit={onSubmit} className="mt-8 space-y-5" noValidate>
           {error ? (

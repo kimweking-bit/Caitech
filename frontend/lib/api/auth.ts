@@ -13,6 +13,7 @@ export async function loginUser(
   username: string,
   password: string,
 ): Promise<AuthTokens> {
+  // Backend accepts /auth/login/ and /auth/token/ (SimpleJWT pair)
   return apiFetch<AuthTokens>("/auth/login/", {
     method: "POST",
     body: JSON.stringify({ username, password }),
