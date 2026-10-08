@@ -22,7 +22,7 @@ export function AuthHeaderActions({ className }: { className?: string }) {
         <Button href="/cart" variant="ghost" size="sm">
           Cart
         </Button>
-        <Button href="/account/orders" variant="ghost" size="sm">
+        <Button href="/account" variant="ghost" size="sm">
           Account
         </Button>
         <button
@@ -64,11 +64,11 @@ export function AuthMobileLinks({ onNavigate }: { onNavigate?: () => void }) {
           Cart
         </Link>
         <Link
-          href="/account/orders"
+          href="/account"
           onClick={onNavigate}
           className="px-2 py-3 text-base text-petrol"
         >
-          Orders
+          My learning
         </Link>
         <button
           type="button"

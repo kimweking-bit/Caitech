@@ -26,6 +26,7 @@ export type CourseSection = {
   id: number;
   title: string;
   order: number;
+  lessons?: CourseLesson[];
 };
 
 export type CourseLesson = {
@@ -35,6 +36,7 @@ export type CourseLesson = {
   duration_minutes?: number | null;
   is_preview?: boolean;
   section?: number | null;
+  video_url?: string | null;
 };
 
 /** GET /api/v1/courses/ and /api/v1/courses/{slug}/ */
@@ -262,4 +264,165 @@ export type LearningPathResult = {
   recommendations: LearningPathRecommendation[];
   status: string;
   created_at: string;
+};
+
+
+/* ---- LMS ---- */
+
+export type DashboardEnrollment = {
+  id: number;
+  course_id: number;
+  course_title: string;
+  course_slug: string;
+  enrolled_at: string;
+  completed: boolean;
+  completed_lessons: number;
+  total_lessons: number;
+  progress_percentage: number;
+  instructor_username: string | null;
+  course_duration: string;
+  course_image: string | null;
+};
+
+export type StudentDashboard = {
+  my_courses: DashboardEnrollment[];
+  pagination: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+  } | null;
+};
+
+export type LessonProgressRow = {
+  id: number;
+  lesson: number;
+  lesson_title: string;
+  lesson_order: number;
+  completed: boolean;
+  completed_at: string | null;
+  updated_at: string;
+};
+
+export type EnrollmentProgress = {
+  enrollment_id: number;
+  course_id: number;
+  total_lessons: number;
+  completed_lessons: number;
+  progress_percentage: number;
+  lessons: LessonProgressRow[];
+};
+
+export type CourseResource = {
+  id: number;
+  title: string;
+  order: number;
+  download_url: string | null;
+  created_at: string;
+};
+
+export type CourseReview = {
+  id: number;
+  rating: number;
+  comment: string;
+  student_username: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type QuizChoice = {
+  id: number;
+  text: string;
+  order: number;
+  is_correct?: boolean;
+};
+
+export type QuizQuestion = {
+  id: number;
+  prompt: string;
+  order: number;
+  points: string | number;
+  allow_multiple: boolean;
+  choices: QuizChoice[];
+};
+
+export type Quiz = {
+  id: number;
+  title: string;
+  description: string;
+  max_attempts: number;
+  questions?: QuizQuestion[];
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type QuizAttempt = {
+  id: number;
+  quiz: number;
+  quiz_title: string;
+  attempt_number: number;
+  score: string | number;
+  total_points: string | number;
+  started_at: string;
+  submitted_at: string | null;
+};
+
+export type Assignment = {
+  id: number;
+  title: string;
+  description: string;
+  due_at: string | null;
+  max_points: string | number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AssignmentSubmission = {
+  id: number;
+  assignment: number;
+  student: number;
+  student_username: string;
+  content: string;
+  submitted_at: string | null;
+  grade: string | number | null;
+  feedback: string;
+  graded_by: number | null;
+  graded_at: string | null;
+};
+
+export type AdminEnrollment = {
+  id: number;
+  student: number;
+  student_username: string;
+  course: number;
+  course_title: string;
+  course_slug: string;
+  enrolled_by: number | null;
+  enrolled_by_username: string | null;
+  note: string;
+  enrolled_at: string;
+  completed: boolean;
+};
+
+export type ContactInquiry = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  course: number | null;
+  created_at: string;
+};
+
+export type NotificationEvent = {
+  id: number;
+  type: string;
+  recipient: string;
+  status: string;
+  error: string;
+  created_at: string;
+};
+
+export type AdminUser = AuthUser & {
+  is_active?: boolean;
+  date_joined?: string;
 };
