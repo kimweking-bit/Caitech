@@ -1,80 +1,101 @@
 /**
- * Provisional API types for Phase 1 shell.
- * Source of truth will be OpenAPI (/api/v1/schema/) once regenerated.
- * Prefer optional fields; never assume featured flags without backend confirmation.
+ * Verified: backend/courses/serializers.VersionedCourseSerializer
+ * + VersionedCategorySerializer + CourseApiPagination (page_size=12)
  */
 
 export type ApiErrorBody = {
   detail?: string;
-  [field: string]: unknown;
+  code?: string;
+  [key: string]: unknown;
 };
 
-export type Paginated<T> = {
+export type PaginatedResponse<T> = {
   count: number;
   next: string | null;
   previous: string | null;
   results: T[];
 };
 
-/** Wire shape guesses — all optional until contract verified. */
-export type CourseListItemWire = {
-  id?: number | string;
-  slug: string;
-  title: string;
-  short_description?: string | null;
-  description?: string | null;
-  thumbnail?: string | null;
-  image?: string | null;
-  cover_image?: string | null;
-  category?:
-    | string
-    | {
-        id?: number | string;
-        name?: string;
-        slug?: string;
-      }
-    | null;
-  level?: string | null;
-  duration?: string | null;
-  duration_hours?: number | null;
-  duration_label?: string | null;
-  delivery_mode?: string | null;
-  price?: string | number | null;
-  currency?: string | null;
-  is_featured?: boolean;
-  featured?: boolean;
-  enrollment_open?: boolean;
-  tools?: string[] | null;
-  software?: string[] | null;
-};
-
-export type CategoryWire = {
-  id?: number | string;
+export type Category = {
+  id: number;
   name: string;
   slug: string;
-  description?: string | null;
-  course_count?: number | null;
 };
 
-export type BlogPostListItemWire = {
-  id?: number | string;
-  slug: string;
+export type CourseSection = {
+  id: number;
   title: string;
-  excerpt?: string | null;
-  published_at?: string | null;
-  cover_image?: string | null;
+  order: number;
 };
 
-/** View-model used by CourseCard — mapped from wire, never invented. */
+export type CourseLesson = {
+  id: number;
+  title: string;
+  order: number;
+  duration_minutes?: number | null;
+  is_preview?: boolean;
+  section?: number | null;
+};
+
+/** GET /api/v1/courses/ and /api/v1/courses/{slug}/ */
+export type CourseListItem = {
+  id: number;
+  title: string;
+  slug: string;
+  short_description: string;
+  description: string;
+  learning_outcomes: string;
+  image: string | null;
+  category: number | null;
+  category_name: string | null;
+  instructor: number | null;
+  instructor_username: string | null;
+  price: string;
+  original_price: string | null;
+  currency: string;
+  seat_capacity: number | null;
+  level: string;
+  is_published: boolean;
+  is_free: boolean;
+  created_at: string;
+  sections: CourseSection[];
+  lessons: CourseLesson[];
+  average_rating: number | null;
+  review_count: number;
+  enrolled_count: number;
+  percent_booked: number | null;
+  total_duration_hours: number;
+  is_available: boolean;
+  course_type: string;
+  duration: string;
+  delivery_modes: string[];
+  intake_status: string;
+  whatsapp_inquiry_url: string;
+};
+
+export type CourseDetail = CourseListItem;
+
+export type CourseListParams = {
+  page?: number;
+  search?: string;
+  category?: string;
+  ordering?: string;
+};
+
 export type CourseCardModel = {
+  id: number;
   slug: string;
-  title: string;
-  categoryLabel?: string;
-  level?: string;
-  durationLabel?: string;
-  deliveryMode?: string;
-  priceLabel?: string;
-  imageUrl?: string;
   href: string;
-  tools?: string[];
+  title: string;
+  description: string;
+  imageUrl: string | null;
+  categoryLabel: string | null;
+  level: string | null;
+  durationLabel: string | null;
+  priceLabel: string | null;
+  originalPriceLabel: string | null;
+  isFree: boolean;
+  isAvailable: boolean;
+  rating: number | null;
+  reviewCount: number;
 };

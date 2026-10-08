@@ -1,120 +1,111 @@
-import { apiFetch } from "@/lib/api/client";
+import { apiFetch, ApiError } from "@/lib/api/client";
+import { formatMoney, mediaUrl } from "@/lib/utils/format";
 import type {
+  Category,
   CourseCardModel,
-  CourseListItemWire,
-  Paginated,
+  CourseDetail,
+  CourseListItem,
+  CourseListParams,
+  PaginatedResponse,
 } from "@/types/api";
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : null;
-}
+export type { CourseCardModel, CourseDetail, CourseListItem, Category };
 
-function pickString(...values: unknown[]): string | undefined {
-  for (const v of values) {
-    if (typeof v === "string" && v.trim()) return v.trim();
+function qs(params?: CourseListParams): string {
+  if (!params) return "";
+  const sp = new URLSearchParams();
+  if (params.page && params.page > 1) sp.set("page", String(params.page));
+  if (params.search?.trim()) sp.set("search", params.search.trim());
+  if (params.category && params.category !== "all") {
+    sp.set("category", params.category);
   }
-  return undefined;
+  if (params.ordering) sp.set("ordering", params.ordering);
+  const s = sp.toString();
+  return s ? `?${s}` : "";
 }
 
-function formatPrice(
-  price: string | number | null | undefined,
-  currency?: string | null,
-): string | undefined {
-  if (price === null || price === undefined || price === "") return undefined;
-  const num = typeof price === "number" ? price : Number(price);
-  if (Number.isFinite(num)) {
-    const cur = (currency || "KES").toUpperCase();
-    try {
-      return new Intl.NumberFormat("en-KE", {
-        style: "currency",
-        currency: cur === "KES" ? "KES" : cur,
-        maximumFractionDigits: 0,
-      }).format(num);
-    } catch {
-      return `${cur} ${num.toLocaleString("en-KE")}`;
+export async function getCourses(
+  params?: CourseListParams,
+): Promise<PaginatedResponse<CourseListItem>> {
+  return apiFetch<PaginatedResponse<CourseListItem>>(`/courses/${qs(params)}`, {
+    next: { revalidate: 60, tags: ["courses"] },
+  });
+}
+
+export async function getCourseBySlug(
+  slug: string,
+): Promise<CourseDetail | null> {
+  try {
+    return await apiFetch<CourseDetail>(
+      `/courses/${encodeURIComponent(slug)}/`,
+      {
+        next: { revalidate: 60, tags: ["courses", `course-${slug}`] },
+      },
+    );
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
+}
+
+export async function getCategories(): Promise<Category[]> {
+  try {
+    const data = await apiFetch<Category[] | PaginatedResponse<Category>>(
+      "/categories/",
+      { next: { revalidate: 300, tags: ["categories"] } },
+    );
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray((data as PaginatedResponse<Category>).results)) {
+      return (data as PaginatedResponse<Category>).results;
     }
-  }
-  return String(price);
-}
-
-/** Map DRF wire → card view-model. Safe with missing optional fields. */
-export function mapCourseToCard(wire: CourseListItemWire): CourseCardModel {
-  const category =
-    typeof wire.category === "string"
-      ? wire.category
-      : pickString(wire.category?.name);
-
-  const durationLabel = pickString(
-    wire.duration_label,
-    wire.duration,
-    wire.duration_hours != null ? `${wire.duration_hours} hours` : undefined,
-  );
-
-  const imageUrl = pickString(
-    wire.thumbnail,
-    wire.cover_image,
-    wire.image,
-  );
-
-  const tools = wire.tools ?? wire.software ?? undefined;
-
-  return {
-    slug: wire.slug,
-    title: wire.title,
-    categoryLabel: category,
-    level: pickString(wire.level),
-    durationLabel,
-    deliveryMode: pickString(wire.delivery_mode),
-    priceLabel: formatPrice(wire.price, wire.currency),
-    imageUrl,
-    href: `/courses/${wire.slug}`,
-    tools: Array.isArray(tools)
-      ? tools.filter((t): t is string => typeof t === "string")
-      : undefined,
-  };
-}
-
-function unwrapList(data: unknown): CourseListItemWire[] {
-  if (Array.isArray(data)) return data as CourseListItemWire[];
-  const rec = asRecord(data);
-  if (rec && Array.isArray(rec.results)) {
-    return rec.results as CourseListItemWire[];
-  }
-  return [];
-}
-
-/**
- * Featured courses for homepage.
- * Tries `?featured=true` then falls back to first page of catalog.
- * Returns [] on any failure — homepage must not crash.
- */
-export async function getFeaturedCourses(
-  limit = 6,
-): Promise<CourseCardModel[]> {
-  try {
-    const featured = await apiFetch<Paginated<CourseListItemWire> | CourseListItemWire[]>(
-      `/courses/?featured=true&page_size=${limit}`,
-      {
-        next: { revalidate: 300, tags: ["courses", "featured"] },
-      },
-    );
-    const list = unwrapList(featured).slice(0, limit);
-    if (list.length > 0) return list.map(mapCourseToCard);
-  } catch {
-    // featured filter may not exist — fall through
-  }
-
-  try {
-    const page = await apiFetch<Paginated<CourseListItemWire> | CourseListItemWire[]>(
-      `/courses/?page_size=${limit}`,
-      {
-        next: { revalidate: 300, tags: ["courses"] },
-      },
-    );
-    return unwrapList(page).slice(0, limit).map(mapCourseToCard);
+    return [];
   } catch {
     return [];
   }
+}
+
+export async function getFeaturedCourses(
+  limit = 3,
+): Promise<CourseListItem[]> {
+  try {
+    const page = await getCourses({ page: 1, ordering: "-created_at" });
+    return page.results.slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
+function durationLabel(c: CourseListItem): string | null {
+  if (c.duration?.trim()) return c.duration.trim();
+  if (c.total_duration_hours > 0) {
+    const h = c.total_duration_hours;
+    return h === 1 ? "1 hour" : `${h} hours`;
+  }
+  return null;
+}
+
+export function toCourseCard(c: CourseListItem): CourseCardModel {
+  const currency = c.currency || "KES";
+  const blurb = c.short_description || c.description || "";
+  return {
+    id: c.id,
+    slug: c.slug,
+    href: `/courses/${c.slug}`,
+    title: c.title,
+    description: blurb,
+    imageUrl: mediaUrl(c.image),
+    categoryLabel: c.category_name || null,
+    level: c.level || null,
+    durationLabel: durationLabel(c),
+    priceLabel: c.is_free ? "Free" : formatMoney(c.price, currency),
+    originalPriceLabel:
+      !c.is_free && c.original_price
+        ? formatMoney(c.original_price, currency)
+        : null,
+    isFree: Boolean(c.is_free),
+    isAvailable: Boolean(c.is_available),
+    rating:
+      c.review_count > 0 && c.average_rating != null ? c.average_rating : null,
+    reviewCount: c.review_count ?? 0,
+  };
 }
