@@ -1,5 +1,7 @@
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
+from accounts.services import send_notification_email
+from notifications.whatsapp import notify_staff
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
@@ -107,6 +109,24 @@ class ContactInquiryCreateV1(APIView):
                 status=status.HTTP_202_ACCEPTED,
             )
         inquiry = serializer.save()
+        from django.conf import settings as djsettings
+        staff_to = getattr(djsettings, "CONTACT_NOTIFY_EMAIL", None) or getattr(
+            djsettings, "DEFAULT_FROM_EMAIL", ""
+        )
+        if staff_to:
+            nl = chr(10)
+            body = (
+                "From: " + inquiry.name + " <" + inquiry.email + ">" + nl
+                + "Phone: " + (inquiry.phone or "-") + nl + nl
+                + inquiry.message + nl
+            )
+            send_notification_email(
+                notification_type="contact_inquiry",
+                recipient=staff_to,
+                subject="Contact inquiry from " + inquiry.name,
+                message=body,
+            )
+        notify_staff("CAITECH inquiry from %s (%s)" % (inquiry.name, inquiry.email))
         return Response(
             ContactInquirySerializer(inquiry).data,
             status=status.HTTP_201_CREATED,

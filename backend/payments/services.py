@@ -16,6 +16,30 @@ from .providers import ProviderError, get_provider
 CENT = Decimal('0.01')
 
 
+
+def _notify_enrollment(user, course):
+    """Best-effort enrollment confirmation (never raises)."""
+    try:
+        name = getattr(user, 'first_name', None) or user.username
+        title = getattr(course, 'title', 'your course')
+        nl = chr(10)
+        body = (
+            'Hello ' + str(name) + ',' + nl + nl
+            + 'You are enrolled in ' + str(title) + '. '
+            + 'Open your student dashboard to start learning.' + nl + nl
+            + 'CAITECH Global Institute' + nl
+        )
+        send_notification_email(
+            notification_type='enrollment',
+            recipient=user.email,
+            subject='Enrolled: ' + str(title),
+            message=body,
+            related_user=user,
+        )
+    except Exception:
+        pass
+
+
 class CallbackError(Exception):
     pass
 
@@ -202,6 +226,8 @@ def create_course_order_for_courses(
                     course=course,
                     defaults={'order': order},
                 )
+                if created:
+                    _notify_enrollment(user, course)
                 if created:
                     email_courses.append(course)
             _record_redemption(order)
@@ -410,6 +436,8 @@ def apply_provider_callback(
                 course=courses[0],
                 defaults={'order': order},
             )
+            if created:
+                _notify_enrollment(order.user, courses[0])
             additional_created = False
             for course in courses[1:]:
                 _, enrolled = Enrollment.objects.get_or_create(
@@ -417,6 +445,8 @@ def apply_provider_callback(
                     course=course,
                     defaults={'order': order},
                 )
+                if enrolled:
+                    _notify_enrollment(order.user, course)
                 additional_created = additional_created or enrolled
             _record_redemption(order)
             if created or additional_created:

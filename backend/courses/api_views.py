@@ -31,6 +31,7 @@ from .models import (
     Section,
 )
 from .permissions import (
+    IsInstructorPermission,
     CanReadLessonAndManageOwner,
     CanReadResourceAndManageOwner,
     IsReviewOwnerOrAdmin,
@@ -550,3 +551,20 @@ class CourseReviewDetailV1(generics.RetrieveUpdateDestroyAPIView):
     queryset = CourseReview.objects.select_related('student', 'course')
     serializer_class = CourseReviewSerializer
     permission_classes = [IsReviewOwnerOrAdmin]
+
+
+class InstructorCourseListView(generics.ListAPIView):
+    """Courses assigned to the authenticated instructor (not the public catalogue)."""
+
+    permission_classes = [permissions.IsAuthenticated, IsInstructorPermission]
+    serializer_class = VersionedCourseSerializer
+    pagination_class = CourseApiPagination
+
+    def get_queryset(self):
+        return (
+            Course.objects.filter(instructor=self.request.user)
+            .select_related('category', 'instructor')
+            .prefetch_related('sections', 'sections__lessons')
+            .order_by('title')
+        )
+

@@ -304,3 +304,17 @@ SPECTACULAR_SETTINGS = {
         'CourseCurrencyEnum': 'courses.models.Course.Currency',
     },
 }
+
+
+# --- WhatsApp (Meta Cloud API) — optional staff notifications ---
+WHATSAPP_ENABLED = env.bool('WHATSAPP_ENABLED', default=False)
+WHATSAPP_ACCESS_TOKEN = env('WHATSAPP_ACCESS_TOKEN', default='')
+WHATSAPP_PHONE_NUMBER_ID = env('WHATSAPP_PHONE_NUMBER_ID', default='')
+WHATSAPP_NOTIFY_TO = env('WHATSAPP_NOTIFY_TO', default='')  # comma-separated E.164 without +
+WHATSAPP_API_VERSION = env('WHATSAPP_API_VERSION', default='v19.0')
+
+# Public site URL used in emails / deep links
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:3000')
+SITE_NAME = env('SITE_NAME', default='CAITECH Global Institute')
+
+CONTACT_NOTIFY_EMAIL = env('CONTACT_NOTIFY_EMAIL', default='')

@@ -160,3 +160,19 @@ class IsReviewOwnerOrAdmin(BasePermission):
             and request.user.is_authenticated
             and (request.user.is_staff or review.student_id == request.user.pk)
         )
+
+
+class IsInstructorPermission(BasePermission):
+    """Authenticated instructors (verified or flagged) and staff."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and (
+                user.is_staff
+                or getattr(user, 'is_verified_instructor', False)
+                or getattr(user, 'is_instructor', False)
+            )
+        )

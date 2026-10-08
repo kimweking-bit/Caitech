@@ -15,6 +15,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import NotificationEvent
 from .services import send_notification_email
+from notifications.whatsapp import notify_staff
 from .serializers import (
     InstructorReviewSerializer,
     DetailResponseSerializer,
@@ -59,6 +60,7 @@ class RegisterView(generics.CreateAPIView):
             ),
             related_user=user,
         )
+        notify_staff(f'New registration: {user.email} ({user.username})')
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 

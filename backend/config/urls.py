@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+from courses.api_views import InstructorCourseListView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenRefreshView
 from accounts.views import LoginView
@@ -14,6 +15,7 @@ urlpatterns = [
     path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/v1/auth/', include('accounts.api_urls')),
     path('api/v1/courses/', include('courses.api_urls')),
+    path('api/v1/instructor/courses/', InstructorCourseListView.as_view(), name='instructor-courses'),
     path('api/v1/payments/', include('payments.api_urls')),
     path('api/v1/ai-path/', include('ai_path.api_urls')),
     path('api/v1/', include('site_content.api_urls')),

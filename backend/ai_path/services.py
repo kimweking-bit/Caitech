@@ -88,7 +88,7 @@ def request_ai_completion(prompt):
 
 
 def build_catalogue():
-    courses = Course.objects.select_related('category').order_by('id')
+    courses = Course.objects.filter(is_published=True).select_related('category').order_by('id')
     return [
         {
             'id': course.pk,

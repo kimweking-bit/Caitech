@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { ApiError } from "@/lib/api/client";
 import { asList, getCourseAssignments, getCourseSections, getSectionLessons, gradeSubmission, listSubmissions } from "@/lib/api/lms";
-import { getCourses } from "@/lib/api/courses";
+import { getInstructorCourses } from "@/lib/api/instructor";
 import type { Assignment, AssignmentSubmission, CourseListItem, CourseLesson, CourseSection } from "@/types/api";
 
 function InstructorHome() {
@@ -25,7 +25,7 @@ function InstructorHome() {
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { let c=false; (async()=>{ try { const page=await getCourses({ page:1 }); if(!c) setCourses(page.results||[]); } catch(e){ if(!c) setError(e instanceof ApiError?e.message:"Could not load courses."); } finally { if(!c) setLoading(false);} })(); return ()=>{c=true}; }, []);
+  useEffect(() => { let c=false; (async()=>{ try { const page=await getInstructorCourses(1); if(!c) setCourses(page.results||[]); } catch(e){ if(!c) setError(e instanceof ApiError?e.message:"Could not load courses."); } finally { if(!c) setLoading(false);} })(); return ()=>{c=true}; }, []);
   async function openCourse(course: CourseListItem) { setSelected(course); setMsg(null); setBusy(true); try { const secs = asList(await getCourseSections(course.id)).sort((a,b)=>a.order-b.order); setSections(secs); const allLessons: CourseLesson[] = []; for (const s of secs) allLessons.push(...asList(await getSectionLessons(s.id))); setLessons(allLessons.sort((a,b)=>a.order-b.order)); setAssignments(asList(await getCourseAssignments(course.id).catch(()=>[]))); setActiveAsg(null); setSubs([]); } catch(e) { setMsg(e instanceof ApiError?e.message:"Could not load course content."); } finally { setBusy(false); } }
   async function openSubs(a: Assignment) { setActiveAsg(a); setBusy(true); setMsg(null); try { setSubs(asList(await listSubmissions(a.id))); } catch(e){ setMsg(e instanceof ApiError?e.message:"Could not load submissions."); } finally { setBusy(false); } }
   async function onGrade(subId: number) { setBusy(true); setMsg(null); try { await gradeSubmission(subId, grade, feedback); setMsg("Grade saved."); if(activeAsg) await openSubs(activeAsg); } catch(e){ setMsg(e instanceof ApiError?e.message:"Could not save grade."); } finally { setBusy(false); } }
