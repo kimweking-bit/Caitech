@@ -50,16 +50,20 @@ function LoginForm() {
         if (
           /no active account/i.test(msg) ||
           /credentials/i.test(msg) ||
-          err.status === 401
+          /not provided/i.test(msg) ||
+          err.status === 401 ||
+          err.status === 400
         ) {
           setError(
-            "Invalid username/email or password. Demo admin: demo.admin / CaitechDemo2026!",
+            "Invalid username/email or password. Use demo.admin / CaitechDemo2026! (or demo.admin@caitech.test).",
           );
         } else {
           setError(msg || "Sign-in failed.");
         }
       } else {
-        setError("Sign-in failed. Check that the API is running.");
+        setError(
+          "Sign-in failed. Confirm the API is running at NEXT_PUBLIC_API_URL.",
+        );
       }
     } finally {
       setSubmitting(false);
