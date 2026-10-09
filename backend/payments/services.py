@@ -279,21 +279,24 @@ def _send_order_confirmation_email(order, courses):
         return True
     course_names = ', '.join(course.title for course in courses)
     student_name = order.customer_name or order.user.get_full_name() or order.user.username
-    dashboard_url = f'{settings.SITE_URL.rstrip("/")}/dashboard/'
+    frontend = getattr(settings, 'FRONTEND_URL', None) or 'http://localhost:3000'
+    dashboard_url = f'{str(frontend).rstrip("/")}/dashboard/'
+    recipient = order.customer_email or order.user.email
+    message = (
+        f'Hello {student_name},' + chr(10) + chr(10)
+        + f'Your purchase of {course_names} is confirmed.' + chr(10)
+        + f'Order: CAI-{str(order.reference).split("-")[0].upper()}' + chr(10)
+        + f'Amount paid: {order.currency} {order.total}' + chr(10)
+        + 'Payment status: PAID' + chr(10)
+        + 'Your course access is now active.' + chr(10) + chr(10)
+        + f'Go to My Courses: {dashboard_url}' + chr(10) + chr(10)
+        + 'CAITECH Global Institute'
+    )
     sent = send_notification_email(
-        'enrolment',
-        order.customer_email or order.user.email,
-        'Your CAI Technologies course enrollment is confirmed',
-        (
-            f'Hello {student_name},\n\n'
-            f'Your purchase of {course_names} is confirmed.\n'
-            f'Order: CAI-{str(order.reference).split("-")[0].upper()}\n'
-            f'Amount paid: {order.currency} {order.total}\n'
-            'Payment status: PAID\n'
-            'Your course access is now active.\n\n'
-            f'Go to My Courses: {dashboard_url}\n\n'
-            'CAI Technologies'
-        ),
+        notification_type='enrollment',
+        recipient=recipient,
+        subject='Your CAITECH course enrollment is confirmed',
+        message=message,
         related_user=order.user,
     )
     order.confirmation_email_last_attempt = timezone.now()
@@ -305,6 +308,7 @@ def _send_order_confirmation_email(order, courses):
         'updated_at',
     ])
     return sent
+
 
 
 def initiate_payment(*, order, method, phone_number='', callback_url='', return_url=''):

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import generics, permissions
@@ -89,14 +90,19 @@ class EnrollmentCreateView(generics.CreateAPIView):
         except IntegrityError as exc:
             raise ValidationError(error) from exc
 
+        frontend = getattr(settings, 'FRONTEND_URL', None) or 'http://localhost:3000'
+        dashboard_url = f'{str(frontend).rstrip("/")}/dashboard/'
+        student_name = self.request.user.get_full_name() or self.request.user.username
         send_notification_email(
-            'enrolment',
-            self.request.user.email,
-            'Enrollment confirmed',
-            (
-                f'Hello {self.request.user.username},\n\n'
-                f'You have been successfully enrolled in {enrollment.course.title}.\n'
-                'Your course access is now active.'
+            notification_type='enrollment',
+            recipient=self.request.user.email,
+            subject='Your CAITECH course enrollment is confirmed',
+            message=(
+                f'Hello {student_name},' + chr(10) + chr(10)
+                + f'You have been successfully enrolled in {enrollment.course.title}.' + chr(10)
+                + 'Your course access is now active.' + chr(10) + chr(10)
+                + f'Go to My Courses: {dashboard_url}' + chr(10) + chr(10)
+                + 'CAITECH Global Institute'
             ),
             related_user=self.request.user,
         )

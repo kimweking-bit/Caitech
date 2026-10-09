@@ -436,18 +436,24 @@ class ManualEnrollmentCreateV1(generics.CreateAPIView):
                 if course.enrollments.count() + reservations >= course.seat_capacity:
                     raise ValidationError({'detail': 'This course has no seats available.'})
             enrollment = serializer.save(enrolled_by=request.user, course=course)
+        frontend = getattr(settings, 'FRONTEND_URL', None) or 'http://localhost:3000'
+        dashboard_url = f'{str(frontend).rstrip("/")}/dashboard/'
+        student_name = student.get_full_name() or student.username
         send_notification_email(
-            'enrolment',
-            student.email,
-            'Enrollment confirmed',
-            (
-                f'Hello {student.username},\n\n'
-                f'You have been enrolled in {course.title}.\n'
-                'Your course access has been activated and you can continue learning.'
+            notification_type='enrollment',
+            recipient=student.email,
+            subject='Your CAITECH course enrollment is confirmed',
+            message=(
+                f'Hello {student_name},' + chr(10) + chr(10)
+                + f'You have been enrolled in {course.title}.' + chr(10)
+                + 'Your course access is now active.' + chr(10) + chr(10)
+                + f'Go to My Courses: {dashboard_url}' + chr(10) + chr(10)
+                + 'CAITECH Global Institute'
             ),
             related_user=student,
         )
         return Response(self.get_serializer(enrollment).data, status=201)
+
 
 
 class AdminEnrollmentListV1(generics.ListAPIView):
