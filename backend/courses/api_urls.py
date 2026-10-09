@@ -16,6 +16,8 @@ from .assessment_views import (
 )
 from .api_views import (
     InstructorCourseListView,
+    InstructorStudentsListView,
+    InstructorOverviewView,
     AdminEnrollmentListV1,
     CategoryDetailV1,
     CategoryListCreateV1,
@@ -38,6 +40,8 @@ from .api_views import (
 
 urlpatterns = [
     path('instructor/courses/', InstructorCourseListView.as_view(), name='instructor-courses'),
+    path('instructor/students/', InstructorStudentsListView.as_view(), name='instructor-students'),
+    path('instructor/overview/', InstructorOverviewView.as_view(), name='instructor-overview'),
     path('<slug:course_slug>/quizzes/', QuizListCreateV1.as_view(), name='api-v1-course-quizzes'),
     path('quizzes/<int:pk>/', QuizDetailV1.as_view(), name='api-v1-quiz-detail'),
     path('quizzes/<int:quiz_pk>/questions/', QuizQuestionListCreateV1.as_view(), name='api-v1-quiz-questions'),

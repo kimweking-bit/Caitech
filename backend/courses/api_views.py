@@ -568,3 +568,63 @@ class InstructorCourseListView(generics.ListAPIView):
             .order_by('title')
         )
 
+
+
+class InstructorStudentsListView(generics.ListAPIView):
+    """Students enrolled in courses assigned to the authenticated instructor."""
+
+    permission_classes = [permissions.IsAuthenticated, IsInstructorPermission]
+    serializer_class = AdminEnrollmentSerializer
+    pagination_class = CourseApiPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['student__username', 'student__email', 'course__title', 'course__slug']
+    ordering_fields = ['enrolled_at', 'student__username', 'course__title']
+    ordering = ['-enrolled_at', '-pk']
+
+    def get_queryset(self):
+        return (
+            Enrollment.objects.filter(course__instructor=self.request.user)
+            .select_related('student', 'course', 'enrolled_by')
+            .order_by('-enrolled_at', '-pk')
+        )
+
+
+class InstructorOverviewView(APIView):
+    """Aggregate teaching metrics for the authenticated instructor (real data only)."""
+
+    permission_classes = [permissions.IsAuthenticated, IsInstructorPermission]
+
+    def get(self, request):
+        from courses.models import Assignment, AssignmentSubmission, CourseReview, Lesson
+
+        courses = Course.objects.filter(instructor=request.user)
+        course_ids = list(courses.values_list('id', flat=True))
+        enrollments = Enrollment.objects.filter(course_id__in=course_ids)
+        students = enrollments.values('student_id').distinct().count()
+        completed = enrollments.filter(completed=True).count()
+        total_enr = enrollments.count()
+        completion_rate = round((completed * 100 / total_enr), 1) if total_enr else 0.0
+
+        assignment_ids = Assignment.objects.filter(course_id__in=course_ids).values_list('id', flat=True)
+        pending = AssignmentSubmission.objects.filter(
+            assignment_id__in=assignment_ids,
+            grade__isnull=True,
+        ).exclude(content='').count()
+
+        reviews = CourseReview.objects.filter(course_id__in=course_ids)
+        avg_rating = None
+        if reviews.exists():
+            from django.db.models import Avg
+            avg_rating = round(float(reviews.aggregate(a=Avg('rating'))['a'] or 0), 2)
+
+        return Response({
+            'assigned_courses': courses.count(),
+            'total_students': students,
+            'total_enrollments': total_enr,
+            'completed_enrollments': completed,
+            'completion_rate': completion_rate,
+            'pending_submissions': pending,
+            'reviews_count': reviews.count(),
+            'average_rating': avg_rating,
+            'total_lessons': Lesson.objects.filter(section__course_id__in=course_ids).count(),
+        })
