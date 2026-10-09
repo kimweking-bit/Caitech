@@ -8,12 +8,13 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ApiError, fieldErrors } from "@/lib/api/client";
+import { portalHome } from "@/lib/portal/roles";
 
 function LoginForm() {
-  const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const { login, user, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/courses";
+  const nextParam = search.get("next");
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -21,8 +22,10 @@ function LoginForm() {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
+  const destination = nextParam || portalHome(user);
+
   if (!authLoading && isAuthenticated) {
-    router.replace(next);
+    router.replace(destination);
   }
 
   async function onSubmit(e: FormEvent) {
@@ -31,8 +34,8 @@ function LoginForm() {
     setFields({});
     setSubmitting(true);
     try {
-      await login(username.trim(), password);
-      router.replace(next);
+      const loggedIn = await login(username.trim(), password);
+      router.replace(nextParam || portalHome(loggedIn || user));
     } catch (err) {
       setFields(fieldErrors(err));
       setError(

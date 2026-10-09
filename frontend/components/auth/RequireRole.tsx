@@ -4,21 +4,22 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { Container } from "@/components/ui/Container";
+import { portalHome } from "@/lib/portal/roles";
 import { Button } from "@/components/ui/Button";
 
-type Role = "student" | "instructor" | "staff";
+type Role = "student" | "instructor" | "admin" | "staff";
 
 function hasRole(
   user: NonNullable<ReturnType<typeof useAuth>["user"]>,
   role: Role,
 ): boolean {
-  if (role === "staff") return Boolean(user.is_staff);
+  if (role === "staff" || role === "admin") return Boolean(user.is_staff);
   if (role === "instructor")
     return Boolean(
       user.is_instructor || user.is_verified_instructor || user.is_staff,
     );
-  return Boolean(user.is_student || user.is_staff || user.is_instructor);
+  // student portal: learners and staff (support/demo)
+  return Boolean(user.is_student || user.is_staff);
 }
 
 export function RequireRole({
@@ -41,19 +42,20 @@ export function RequireRole({
 
   if (loading) {
     return (
-      <Container className="py-16">
+      <div className="px-4 py-16 md:px-8">
         <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-muted">
           Checking access…
         </p>
-      </Container>
+      </div>
     );
   }
 
   if (!isAuthenticated || !user) return null;
 
   if (!hasRole(user, role)) {
+    const home = portalHome(user);
     return (
-      <Container className="py-16 text-center">
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
           Restricted
         </p>
@@ -61,11 +63,11 @@ export function RequireRole({
           You do not have access
         </h1>
         <p className="mt-3 text-sm text-ink-muted">
-          This area requires {role} permissions.
+          This area requires {role === "admin" ? "admin" : role} permissions.
         </p>
         <div className="mt-8 flex justify-center gap-3">
-          <Button href="/account" variant="lime">
-            Account
+          <Button href={home} variant="lime">
+            Open my portal
           </Button>
           <Button href="/courses" variant="secondary">
             Courses
@@ -76,7 +78,7 @@ export function RequireRole({
             Home
           </Link>
         </p>
-      </Container>
+      </div>
     );
   }
 

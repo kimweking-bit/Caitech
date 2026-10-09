@@ -1,18 +1,32 @@
 "use client";
 
 import { RequireRole } from "@/components/auth/RequireRole";
-import { AdminNav } from "@/components/admin/AdminNav";
-import { Container } from "@/components/ui/Container";
+import { PortalShell } from "@/components/portal/PortalShell";
+import type { PortalNavItem } from "@/components/portal/types";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+const nav: PortalNavItem[] = [
+  { href: "/admin", label: "Overview", exact: true },
+  { href: "/admin/courses", label: "Courses" },
+  { href: "/admin/students", label: "Students" },
+  { href: "/admin/instructors", label: "Instructors" },
+  { href: "/admin/enrollments", label: "Enrollments" },
+  { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/inquiries", label: "Inquiries" },
+  { href: "/admin/blog", label: "Blog" },
+  { href: "/admin/newsletter", label: "Newsletter" },
+  { href: "/admin/notifications", label: "Notifications" },
+];
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <RequireRole role="staff">
-      <Container className="py-10 md:py-12">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">Operations</p>
-        <h1 className="mt-2 font-display text-3xl text-petrol md:text-4xl">Admin</h1>
-        <div className="mt-8"><AdminNav /></div>
-        <div className="mt-8">{children}</div>
-      </Container>
+    <RequireRole role="admin">
+      <PortalShell kind="admin" nav={nav}>
+        {children}
+      </PortalShell>
     </RequireRole>
   );
 }

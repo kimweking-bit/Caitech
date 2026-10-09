@@ -7,68 +7,130 @@ import type {
   PaginatedResponse,
 } from "@/types/api";
 
-export function asList<T>(data: T[] | PaginatedResponse<T> | undefined | null): T[] {
+export function asListAdmin<T>(
+  data: PaginatedResponse<T> | T[] | undefined | null,
+): T[] {
   if (!data) return [];
   if (Array.isArray(data)) return data;
   return data.results ?? [];
 }
 
-export async function listAdminUsers(page = 1, search = "") {
+/** Alias used by existing admin pages */
+export const asList = asListAdmin;
+
+export type InstructorApplication = {
+  id: number;
+  user?: number;
+  username?: string;
+  email?: string;
+  status: string;
+  message?: string;
+  motivation?: string;
+  created_at?: string;
+  reviewed_at?: string | null;
+  [key: string]: unknown;
+};
+
+export type NewsletterSubscription = {
+  id: number;
+  email: string;
+  created_at?: string;
+  is_active?: boolean;
+  [key: string]: unknown;
+};
+
+function pageQuery(page?: number, search?: string) {
   const sp = new URLSearchParams();
-  if (page > 1) sp.set("page", String(page));
-  if (search.trim()) sp.set("search", search.trim());
-  const q = sp.toString() ? `?${sp.toString()}` : "";
-  return apiFetch<PaginatedResponse<AdminUser> | AdminUser[]>(
-    `/auth/admin/users/${q}`,
-    { auth: true, cache: "no-store" },
-  );
+  if (page && page > 1) sp.set("page", String(page));
+  if (search?.trim()) sp.set("search", search.trim());
+  const q = sp.toString();
+  return q ? `?${q}` : "";
 }
 
-export async function listInquiries(page = 1) {
-  const q = page > 1 ? `?page=${page}` : "";
-  return apiFetch<PaginatedResponse<ContactInquiry> | ContactInquiry[]>(
-    `/contact/inquiries/${q}`,
-    { auth: true, cache: "no-store" },
-  );
+/** Supports listAdminUsers(1) and listAdminUsers({ page, search }) */
+export async function listAdminUsers(
+  pageOrParams: number | { page?: number; search?: string } = 1,
+  search?: string,
+): Promise<PaginatedResponse<AdminUser> | AdminUser[]> {
+  const params =
+    typeof pageOrParams === "number"
+      ? { page: pageOrParams, search }
+      : pageOrParams || {};
+  return apiFetch(`/auth/admin/users/${pageQuery(params.page, params.search)}`, {
+    auth: true,
+    cache: "no-store",
+  });
 }
 
-export async function listNotifications(page = 1) {
-  const q = page > 1 ? `?page=${page}` : "";
-  return apiFetch<PaginatedResponse<NotificationEvent> | NotificationEvent[]>(
-    `/auth/admin/notifications/${q}`,
-    { auth: true, cache: "no-store" },
-  );
+export async function listAdminInstructors(
+  page = 1,
+): Promise<PaginatedResponse<AdminUser> | AdminUser[]> {
+  return apiFetch(`/auth/admin/instructors/${pageQuery(page)}`, {
+    auth: true,
+    cache: "no-store",
+  });
 }
 
-export async function listStaffPosts(page = 1) {
-  const q = page > 1 ? `?page=${page}` : "";
-  return apiFetch<PaginatedResponse<BlogPost> | BlogPost[]>(
-    `/blog/posts/${q}`,
-    { auth: true, cache: "no-store" },
-  );
+export async function listInstructorApplications(
+  page = 1,
+): Promise<PaginatedResponse<InstructorApplication> | InstructorApplication[]> {
+  return apiFetch(`/auth/instructor/requests/${pageQuery(page)}`, {
+    auth: true,
+    cache: "no-store",
+  });
 }
 
-export async function createStaffPost(payload: {
-  title: string;
-  slug: string;
-  excerpt?: string;
-  body: string;
-  status?: string;
-}): Promise<BlogPost> {
-  return apiFetch<BlogPost>(`/blog/posts/`, {
+export async function reviewInstructorApplication(
+  id: number,
+  approved: boolean,
+): Promise<unknown> {
+  return apiFetch(`/auth/instructor/requests/${id}/review/`, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ approved }),
     auth: true,
   });
 }
 
-export async function updateStaffPost(
-  slug: string,
-  payload: Partial<{ title: string; excerpt: string; body: string; status: string }>,
-): Promise<BlogPost> {
-  return apiFetch<BlogPost>(`/blog/posts/${encodeURIComponent(slug)}/`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
+export async function listContactInquiries(
+  page = 1,
+): Promise<PaginatedResponse<ContactInquiry> | ContactInquiry[]> {
+  return apiFetch(`/content/contact/${pageQuery(page)}`, {
     auth: true,
+    cache: "no-store",
+  });
+}
+
+/** Back-compat */
+export const listInquiries = listContactInquiries;
+
+export async function listAdminNotifications(
+  page = 1,
+): Promise<PaginatedResponse<NotificationEvent> | NotificationEvent[]> {
+  return apiFetch(`/auth/admin/notifications/${pageQuery(page)}`, {
+    auth: true,
+    cache: "no-store",
+  });
+}
+
+/** Back-compat */
+export const listNotifications = listAdminNotifications;
+
+export async function listAdminBlogPosts(
+  page = 1,
+): Promise<PaginatedResponse<BlogPost> | BlogPost[]> {
+  return apiFetch(`/content/blog/posts/${pageQuery(page)}`, {
+    auth: true,
+    cache: "no-store",
+  });
+}
+
+export async function listNewsletterSubscriptions(
+  page = 1,
+): Promise<
+  PaginatedResponse<NewsletterSubscription> | NewsletterSubscription[]
+> {
+  return apiFetch(`/content/newsletter/subscribers/${pageQuery(page)}`, {
+    auth: true,
+    cache: "no-store",
   });
 }

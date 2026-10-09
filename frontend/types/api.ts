@@ -33,6 +33,7 @@ export type CourseLesson = {
   id: number;
   title: string;
   order: number;
+  content?: string | null;
   duration_minutes?: number | null;
   is_preview?: boolean;
   section?: number | null;

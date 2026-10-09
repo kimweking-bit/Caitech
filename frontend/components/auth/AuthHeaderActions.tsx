@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/cn";
+import { portalHome } from "@/lib/portal/roles";
 
 export function AuthHeaderActions({ className }: { className?: string }) {
   const { user, loading, logout, isAuthenticated } = useAuth();
+  const home = portalHome(user);
 
   if (loading) {
     return (
@@ -22,12 +24,12 @@ export function AuthHeaderActions({ className }: { className?: string }) {
         <Button href="/cart" variant="ghost" size="sm">
           Cart
         </Button>
-        <Button href="/account" variant="ghost" size="sm">
-          Account
+        <Button href={home} variant="ghost" size="sm">
+          Portal
         </Button>
         <button
           type="button"
-          onClick={() => logout()}
+          onClick={() => void logout()}
           className="inline-flex items-center px-2.5 py-2 text-sm text-ink-muted transition-colors hover:text-petrol"
         >
           Log out
@@ -49,9 +51,8 @@ export function AuthHeaderActions({ className }: { className?: string }) {
 }
 
 export function AuthMobileLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const { isAuthenticated, loading, logout } = useAuth();
-
-  if (loading) return null;
+  const { user, isAuthenticated, logout } = useAuth();
+  const home = portalHome(user);
 
   if (isAuthenticated) {
     return (
@@ -64,19 +65,19 @@ export function AuthMobileLinks({ onNavigate }: { onNavigate?: () => void }) {
           Cart
         </Link>
         <Link
-          href="/account"
+          href={home}
           onClick={onNavigate}
           className="px-2 py-3 text-base text-petrol"
         >
-          My learning
+          My portal
         </Link>
         <button
           type="button"
-          className="px-2 py-3 text-left text-base text-ink-muted"
           onClick={() => {
-            logout();
+            void logout();
             onNavigate?.();
           }}
+          className="px-2 py-3 text-left text-base text-ink-muted"
         >
           Log out
         </button>
@@ -85,7 +86,7 @@ export function AuthMobileLinks({ onNavigate }: { onNavigate?: () => void }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 border-t border-line pt-4">
+    <div className="flex flex-col gap-1 border-t border-line pt-4">
       <Link
         href="/login"
         onClick={onNavigate}
@@ -96,7 +97,7 @@ export function AuthMobileLinks({ onNavigate }: { onNavigate?: () => void }) {
       <Link
         href="/register"
         onClick={onNavigate}
-        className="px-2 py-3 text-base font-medium text-petrol"
+        className="px-2 py-3 text-base text-petrol"
       >
         Register
       </Link>
