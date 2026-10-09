@@ -2,18 +2,24 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ApiError, fieldErrors } from "@/lib/api/client";
 
+function safeNext(raw: string | null): string {
+  if (!raw) return "/courses";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/courses";
+  return raw;
+}
+
 function RegisterForm() {
   const { register, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/courses";
+  const next = safeNext(search.get("next"));
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -22,9 +28,11 @@ function RegisterForm() {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  if (!authLoading && isAuthenticated) {
-    router.replace(next);
-  }
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace(next);
+    }
+  }, [authLoading, isAuthenticated, next, router]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

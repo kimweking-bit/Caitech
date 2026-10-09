@@ -24,12 +24,16 @@ from .serializers import (
     PasswordResetRequestSerializer,
     UserRegisterSerializer,
     UserSerializer,
+    EmailOrUsernameTokenObtainPairSerializer,
 )
 
 User = get_user_model()
 
 
 class LoginView(TokenObtainPairView):
+    serializer_class = EmailOrUsernameTokenObtainPairSerializer
+
+
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'login'
 

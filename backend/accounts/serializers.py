@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.validators import UniqueValidator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
@@ -10,6 +12,23 @@ from django.utils.http import urlsafe_base64_decode
 from .models import NotificationEvent
 
 User = get_user_model()
+
+
+class EmailOrUsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Accept username or email in the `username` field for JWT login."""
+
+    def validate(self, attrs):
+        raw = (attrs.get(self.username_field) or "").strip()
+        if raw and "@" in raw:
+            match = (
+                User.objects.filter(Q(email__iexact=raw) | Q(username__iexact=raw))
+                .order_by("id")
+                .first()
+            )
+            if match is not None:
+                attrs[self.username_field] = match.get_username()
+        return super().validate(attrs)
+
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(

@@ -600,6 +600,14 @@ class InstructorOverviewView(APIView):
 
     permission_classes = [permissions.IsAuthenticated, IsInstructorPermission]
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description='Instructor teaching metrics',
+            )
+        }
+    )
     def get(self, request):
         from courses.models import Assignment, AssignmentSubmission, CourseReview, Lesson
 
