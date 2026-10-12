@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { asList, listAdminEnrollments } from "@/lib/api/lms";
-import { displayTitle } from "@/lib/utils/display";
 import type { AdminEnrollment } from "@/types/api";
+import { displayTitle } from "@/lib/utils/display";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { DataTable, Td } from "@/components/portal/DataTable";
 import { StatusBadge } from "@/components/portal/StatusBadge";
@@ -21,14 +21,25 @@ export default function AdminEnrollmentsPage() {
     let c = false;
     (async () => {
       try {
-        const data = await listAdminEnrollments(1);
+        const all: AdminEnrollment[] = [];
+        let total = 0;
+        for (let p = 1; p <= 10; p++) {
+          const data = await listAdminEnrollments(p);
+          const batch = asList(data);
+          all.push(...batch);
+          if (typeof data === "object" && data && "count" in data) {
+            total = Number((data as { count: number }).count) || total;
+          }
+          if (
+            Array.isArray(data) ||
+            !(data as { next?: string | null }).next ||
+            batch.length === 0
+          )
+            break;
+        }
         if (!c) {
-          setRows(asList(data));
-          setCount(
-            typeof data === "object" && data && "count" in data
-              ? Number((data as { count: number }).count)
-              : asList(data).length,
-          );
+          setRows(all);
+          setCount(total || all.length);
         }
       } catch (e) {
         if (!c)

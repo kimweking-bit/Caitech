@@ -1,0 +1,41 @@
+        <div className="border-t border-white/10">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2.5 sm:px-6">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-ground/40">
+              © {new Date().getFullYear()} CAITECH Global Institute
+            </p>
+            <div className="flex gap-4 font-mono text-[9px] uppercase tracking-[0.12em] text-ground/45">
+              <Link href="/about" className="hover:text-ground">
+                About
+              </Link>
+              <Link href="/contact" className="hover:text-ground">
+                Contact
+              </Link>
+              <Link href="/faq" className="hover:text-ground">
+                FAQ
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+export function AuthFormTitle({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="mb-8">
+      <h2 className="font-display text-2xl tracking-tight text-petrol sm:text-[1.75rem]">
+        {title}
+      </h2>
+      {description ? (
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">{description}</p>
+      ) : null}
+    </div>
+  );
+}

@@ -1,0 +1,50 @@
+        email: email.trim(),
+        password,
+      });
+      router.replace(next);
+    } catch (err) {
+      setFields(fieldErrors(err));
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not create your account.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <AuthShell
+      variant="register"
+      title="Create account"
+      description="Register with a username, email, and password to begin your CAITECH pathway."
+    >
+      <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
+        {error ? (
+          <div
+            role="alert"
+            className="border border-danger/25 bg-danger/5 px-3.5 py-3 text-sm text-danger"
+          >
+            {error}
+          </div>
+        ) : null}
+
+        <Input
+          id="username"
+          label="Username"
+          name="username"
+          autoComplete="username"
+          required
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          disabled={submitting}
+          error={fields.username}
+        />
+
+        <Input
+          id="email"
+          label="Email"
+          name="email"
+          type="email"
+          autoComplete="email"

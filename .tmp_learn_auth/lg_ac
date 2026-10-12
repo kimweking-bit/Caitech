@@ -1,0 +1,50 @@
+          autoComplete="username"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          required
+          disabled={submitting}
+          error={fields.username || fields.email}
+        />
+
+        <div className="space-y-2">
+          <PasswordInput
+            id="login-password"
+            label="Password"
+            name="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={submitting}
+            error={fields.password}
+          />
+          <div className="flex justify-end">
+            <Link
+              href="/forgot-password"
+              className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted underline-offset-4 hover:text-petrol hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          variant="lime"
+          className="w-full justify-center"
+          disabled={submitting || authLoading}
+        >
+          {submitting ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
+
+      <p className="mt-8 border-t border-line pt-6 text-sm text-ink-muted">
+        Don&apos;t have an account?{" "}
+        <Link
+          href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"}
+          className="font-medium text-petrol underline-offset-4 hover:underline"
+        >
+          Create one
+        </Link>
+      </p>
+    </AuthShell>

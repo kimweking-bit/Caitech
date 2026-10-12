@@ -1,0 +1,31 @@
+0136|        >
+0137|          {submitting ? "Signing in…" : "Sign in"}
+0138|        </Button>
+0139|      </form>
+0140|
+0141|      <p className="mt-8 border-t border-line pt-6 text-sm text-ink-muted">
+0142|        Don&apos;t have an account?{" "}
+0143|        <Link
+0144|          href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"}
+0145|          className="font-medium text-petrol underline-offset-4 hover:underline"
+0146|        >
+0147|          Create one
+0148|        </Link>
+0149|      </p>
+0150|    </AuthShell>
+0151|  );
+0152|}
+0153|
+0154|export default function LoginPage() {
+0155|  return (
+0156|    <Suspense
+0157|      fallback={
+0158|        <div className="flex min-h-[100dvh] items-center justify-center bg-ground font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+0159|          Loading…
+0160|        </div>
+0161|      }
+0162|    >
+0163|      <LoginForm />
+0164|    </Suspense>
+0165|  );
+0166|}

@@ -1,0 +1,45 @@
+0001|"use client";
+0002|
+0003|import Link from "next/link";
+0004|import { useRouter, useSearchParams } from "next/navigation";
+0005|import { FormEvent, Suspense, useEffect, useState } from "react";
+0006|import { useAuth } from "@/components/auth/AuthProvider";
+0007|import { AuthFormTitle, AuthShell } from "@/components/auth/AuthShell";
+0008|import { Button } from "@/components/ui/Button";
+0009|import { Input } from "@/components/ui/Input";
+0010|import { PasswordInput } from "@/components/ui/PasswordInput";
+0011|import { ApiError, fieldErrors } from "@/lib/api/client";
+0012|import { portalHome } from "@/lib/portal/roles";
+0013|
+0014|function safeNext(raw: string | null): string | null {
+0015|  if (!raw) return null;
+0016|  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+0017|  return raw;
+0018|}
+0019|
+0020|function RegisterForm() {
+0021|  const { register, isAuthenticated, user, loading: authLoading } = useAuth();
+0022|  const router = useRouter();
+0023|  const search = useSearchParams();
+0024|  const next = safeNext(search.get("next"));
+0025|
+0026|  const [username, setUsername] = useState("");
+0027|  const [email, setEmail] = useState("");
+0028|  const [password, setPassword] = useState("");
+0029|  const [error, setError] = useState<string | null>(null);
+0030|  const [fields, setFields] = useState<Record<string, string>>({});
+0031|  const [submitting, setSubmitting] = useState(false);
+0032|
+0033|  useEffect(() => {
+0034|    if (!authLoading && isAuthenticated) {
+0035|      router.replace(next || portalHome(user));
+0036|    }
+0037|  }, [authLoading, isAuthenticated, next, router, user]);
+0038|
+0039|  async function onSubmit(e: FormEvent) {
+0040|    e.preventDefault();
+0041|    setError(null);
+0042|    setFields({});
+0043|    if (password.length < 8) {
+0044|      setFields({ password: "Use at least 8 characters." });
+0045|      return;

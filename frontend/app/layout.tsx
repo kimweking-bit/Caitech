@@ -37,7 +37,20 @@ export const metadata: Metadata = {
     template: `%s · ${site.shortName}`,
   },
   description: site.description,
-  applicationName: site.name,
+  applicationName: site.shortName,
+  authors: [{ name: site.name }],
+  creator: site.name,
+  publisher: site.name,
+  // CAITECH-only icons — no create-next-app / framework defaults.
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon", type: "image/png", sizes: "32x32" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
+  },
   openGraph: {
     type: "website",
     locale: "en_KE",
@@ -57,6 +70,10 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "/",
+  },
+  other: {
+    // Suppress generic framework generator hints in document head.
+    google: "notranslate",
   },
 };
 

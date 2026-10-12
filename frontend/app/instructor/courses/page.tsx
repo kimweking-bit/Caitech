@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { getInstructorCourses } from "@/lib/api/instructor";
-import { displayTitle } from "@/lib/utils/display";
 import type { CourseListItem } from "@/types/api";
+import { displayTitle } from "@/lib/utils/display";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { DataTable, Td } from "@/components/portal/DataTable";
 import { StatusBadge } from "@/components/portal/StatusBadge";
@@ -21,8 +22,13 @@ export default function InstructorCoursesPage() {
     let c = false;
     (async () => {
       try {
-        const page = await getInstructorCourses(1);
-        if (!c) setCourses(page.results || []);
+        const all: CourseListItem[] = [];
+        for (let p = 1; p <= 5; p++) {
+          const page = await getInstructorCourses(p);
+          all.push(...(page.results || []));
+          if (!page.next) break;
+        }
+        if (!c) setCourses(all);
       } catch (e) {
         if (!c)
           setError(

@@ -1,0 +1,40 @@
+0121|
+0122|      {/* Compact institutional footer */}
+0123|      <footer className="border-t border-line bg-petrol-deep text-ground">
+0124|        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+0125|          <div>
+0126|            <p className="font-display text-base tracking-tight">
+0127|              CAITECH Global Institute
+0128|            </p>
+0129|            <p className="mt-1 max-w-sm text-xs leading-relaxed text-ground/60">
+0130|              {instituteContact.addressLines.join(", ")}
+0131|            </p>
+0132|          </div>
+0133|          <div className="flex flex-col gap-1 font-mono text-[11px] text-ground/65 sm:items-end">
+0134|            {instituteContact.phones.map((p) => (
+0135|              <a
+0136|                key={p}
+0137|                href={`tel:${p.replace(/\s/g, "")}`}
+0138|                className="hover:text-lime focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
+0139|              >
+0140|                {p}
+0141|              </a>
+0142|            ))}
+0143|            <a
+0144|              href={`mailto:${instituteContact.email}`}
+0145|              className="hover:text-lime focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
+0146|            >
+0147|              {instituteContact.email}
+0148|            </a>
+0149|          </div>
+0150|        </div>
+0151|        <div className="border-t border-white/10">
+0152|          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2.5 sm:px-6">
+0153|            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-ground/40">
+0154|              © {new Date().getFullYear()} CAITECH Global Institute
+0155|            </p>
+0156|            <div className="flex gap-4 font-mono text-[9px] uppercase tracking-[0.12em] text-ground/45">
+0157|              <Link href="/about" className="hover:text-ground">
+0158|                About
+0159|              </Link>
+0160|              <Link href="/contact" className="hover:text-ground">

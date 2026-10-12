@@ -1,0 +1,40 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
+import { portalHome } from "@/lib/portal/roles";
+import type { AuthUser } from "@/types/api";
+
+function safeNext(raw: string | null): string | null {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
+  return raw;
+}
+
+function LoginForm() {
+  const { login, user, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const params = useSearchParams();
+  const next = safeNext(params.get("next"));
+
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user) {
+      router.replace(next ?? portalHome(user));
+    }
+  }, [authLoading, isAuthenticated, user, next, router]);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {

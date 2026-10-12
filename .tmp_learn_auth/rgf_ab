@@ -1,0 +1,45 @@
+0046|    }
+0047|    setSubmitting(true);
+0048|    try {
+0049|      await register({
+0050|        username: username.trim(),
+0051|        email: email.trim(),
+0052|        password,
+0053|      });
+0054|      // AuthProvider auto-logs in after register; route by role
+0055|      router.replace(next || "/student");
+0056|    } catch (err) {
+0057|      setFields(fieldErrors(err));
+0058|      setError(
+0059|        err instanceof ApiError
+0060|          ? err.message
+0061|          : "Could not create your account.",
+0062|      );
+0063|    } finally {
+0064|      setSubmitting(false);
+0065|    }
+0066|  }
+0067|
+0068|  return (
+0069|    <AuthShell
+0070|      variant="register"
+0071|      eyebrow="Join CAITECH"
+0072|      headline="Start your technical learning path."
+0073|      lead="Create an account to enrol in programmes, track progress, and access your learning workspace."
+0074|      detail="New learners · Kenya & beyond"
+0075|    >
+0076|      <AuthFormTitle
+0077|        title="Create account"
+0078|        description="You'll land in the student learning portal after registration."
+0079|      />
+0080|
+0081|      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+0082|        {error ? (
+0083|          <p
+0084|            role="alert"
+0085|            className="border border-line bg-ground px-3 py-2.5 text-sm text-petrol"
+0086|          >
+0087|            {error}
+0088|          </p>
+0089|        ) : null}
+0090|

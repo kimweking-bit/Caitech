@@ -1,0 +1,108 @@
+0001|import Link from "next/link";
+0002|import type { ButtonHTMLAttributes, ReactNode } from "react";
+0003|import { cn } from "@/lib/utils/cn";
+0004|
+0005|type Variant = "primary" | "secondary" | "ghost" | "lime";
+0006|type Size = "sm" | "md" | "lg";
+0007|
+0008|const variantClass: Record<Variant, string> = {
+0009|  primary:
+0010|    "bg-petrol text-ground hover:bg-petrol-deep border border-petrol focus-visible:outline-lime",
+0011|  secondary:
+0012|    "bg-transparent text-petrol border border-petrol/30 hover:border-petrol hover:bg-surface",
+0013|  ghost:
+0014|    "bg-transparent text-petrol border border-transparent hover:bg-petrol/5",
+0015|  lime: "bg-lime text-lime-ink border border-lime hover:bg-lime-bright font-semibold",
+0016|};
+0017|
+0018|const sizeClass: Record<Size, string> = {
+0019|  sm: "h-9 px-3 text-sm gap-1.5",
+0020|  md: "h-11 px-4 text-sm gap-2",
+0021|  lg: "h-12 px-5 text-base gap-2",
+0022|};
+0023|
+0024|type Common = {
+0025|  variant?: Variant;
+0026|  size?: Size;
+0027|  className?: string;
+0028|  children: ReactNode;
+0029|};
+0030|
+0031|type ButtonAsButton = Common &
+0032|  ButtonHTMLAttributes<HTMLButtonElement> & {
+0033|    href?: undefined;
+0034|  };
+0035|
+0036|type ButtonAsLink = Common & {
+0037|  href: string;
+0038|  external?: boolean;
+0039|};
+0040|
+0041|export type ButtonProps = ButtonAsButton | ButtonAsLink;
+0042|
+0043|export function Button(props: ButtonProps) {
+0044|  const {
+0045|    variant = "primary",
+0046|    size = "md",
+0047|    className,
+0048|    children,
+0049|  } = props;
+0050|
+0051|  const classes = cn(
+0052|    "inline-flex items-center justify-center font-medium tracking-wide transition-colors duration-150",
+0053|    "rounded-[var(--radius-md)] disabled:opacity-50 disabled:pointer-events-none",
+0054|    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+0055|    variantClass[variant],
+0056|    sizeClass[size],
+0057|    className,
+0058|  );
+0059|
+0060|  if ("href" in props && props.href) {
+0061|    const { href, external } = props;
+0062|    if (external) {
+0063|      return (
+0064|        <a
+0065|          href={href}
+0066|          className={classes}
+0067|          target="_blank"
+0068|          rel="noopener noreferrer"
+0069|        >
+0070|          {children}
+0071|        </a>
+0072|      );
+0073|    }
+0074|    return (
+0075|      <Link href={href} className={classes}>
+0076|        {children}
+0077|      </Link>
+0078|    );
+0079|  }
+0080|
+0081|  const buttonProps = props as ButtonAsButton;
+0082|  const {
+0083|    type = "button",
+0084|    disabled,
+0085|    onClick,
+0086|    name,
+0087|    value,
+0088|    form,
+0089|    formAction,
+0090|    "aria-label": ariaLabel,
+0091|  } = buttonProps;
+0092|
+0093|  return (
+0094|    <button
+0095|      type={type}
+0096|      className={classes}
+0097|      disabled={disabled}
+0098|      onClick={onClick}
+0099|      name={name}
+0100|      value={value}
+0101|      form={form}
+0102|      formAction={formAction}
+0103|      aria-label={ariaLabel}
+0104|    >
+0105|      {children}
+0106|    </button>
+0107|  );
+0108|}

@@ -115,6 +115,16 @@ export async function listAdminNotifications(
 /** Back-compat */
 export const listNotifications = listAdminNotifications;
 
+
+export async function listMyNotifications(
+  page = 1,
+): Promise<PaginatedResponse<NotificationEvent> | NotificationEvent[]> {
+  return apiFetch(`/auth/me/notifications/${pageQuery(page)}`, {
+    auth: true,
+    cache: "no-store",
+  });
+}
+
 export async function listAdminBlogPosts(
   page = 1,
 ): Promise<PaginatedResponse<BlogPost> | BlogPost[]> {

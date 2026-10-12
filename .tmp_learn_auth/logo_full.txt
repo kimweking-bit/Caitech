@@ -1,0 +1,55 @@
+0001|import Image from "next/image";
+0002|import Link from "next/link";
+0003|import { cn } from "@/lib/utils/cn";
+0004|
+0005|/** Intrinsic logo aspect from source artwork (square mark). */
+0006|const LOGO_INTRINSIC_W = 640;
+0007|const LOGO_INTRINSIC_H = 640;
+0008|
+0009|type LogoProps = {
+0010|  className?: string;
+0011|  /** Inverse treatment for dark petrol surfaces */
+0012|  inverse?: boolean;
+0013|  /** Compact height for dense chrome */
+0014|  compact?: boolean;
+0015|};
+0016|
+0017|/**
+0018| * Real CAITECH institutional logo (circular mark + wordmark).
+0019| * White plate on dark surfaces so the original artwork remains legible.
+0020| */
+0021|export function Logo({ className, inverse = false, compact = false }: LogoProps) {
+0022|  const height = compact ? 36 : 44;
+0023|  const width = Math.round(height * (LOGO_INTRINSIC_W / LOGO_INTRINSIC_H));
+0024|
+0025|  return (
+0026|    <Link
+0027|      href="/"
+0028|      className={cn(
+0029|        "group inline-flex items-center no-underline",
+0030|        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4",
+0031|        inverse ? "focus-visible:outline-lime" : "focus-visible:outline-petrol",
+0032|        className,
+0033|      )}
+0034|      aria-label="CAITECH Global Institute — home"
+0035|    >
+0036|      <span
+0037|        className={cn(
+0038|          "relative inline-flex items-center justify-center overflow-hidden",
+0039|          inverse &&
+0040|            "rounded-sm bg-white px-1.5 py-1 shadow-[0_0_0_1px_rgb(255_255_255/0.15)]",
+0041|        )}
+0042|      >
+0043|        <Image
+0044|          src="/brand/caitech-logo.png"
+0045|          alt="CAITECH Global Institute"
+0046|          width={width}
+0047|          height={height}
+0048|          className="h-auto w-auto object-contain"
+0049|          style={{ height, width: "auto" }}
+0050|          priority
+0051|        />
+0052|      </span>
+0053|    </Link>
+0054|  );
+0055|}

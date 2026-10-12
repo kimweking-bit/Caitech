@@ -1,0 +1,50 @@
+        />
+
+        <Input
+          id="reg-email"
+          label="Email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          disabled={submitting}
+          error={fields.email}
+        />
+
+        <PasswordInput
+          id="reg-password"
+          label="Password"
+          name="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={8}
+          disabled={submitting}
+          error={fields.password}
+          hint="At least 8 characters."
+        />
+
+        <Button
+          type="submit"
+          variant="lime"
+          className="w-full justify-center"
+          disabled={submitting || authLoading}
+        >
+          {submitting ? "Creating account…" : "Create account"}
+        </Button>
+      </form>
+
+      <p className="mt-8 border-t border-line pt-6 text-sm text-ink-muted">
+        Already have an account?{" "}
+        <Link
+          href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+          className="font-medium text-petrol underline-offset-4 hover:underline"
+        >
+          Sign in
+        </Link>
+      </p>
+    </AuthShell>
+  );

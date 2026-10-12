@@ -1,0 +1,50 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
+import { ApiError, fieldErrors } from "@/lib/api/client";
+import { portalHome } from "@/lib/portal/roles";
+
+function safeNext(raw: string | null): string | null {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
+  return raw;
+}
+
+function RegisterForm() {
+  const { register, user, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const params = useSearchParams();
+  const nextParam = safeNext(params.get("next"));
+  const next = nextParam ?? (user ? portalHome(user) : "/student");
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace(next);
+    }
+  }, [authLoading, isAuthenticated, next, router]);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setFields({});
+    if (password.length < 8) {
+      setFields({ password: "Use at least 8 characters." });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await register({
+        username: username.trim(),

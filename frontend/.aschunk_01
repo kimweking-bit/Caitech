@@ -1,0 +1,50 @@
+  { href: "/student", label: "Student workspace", detail: "Courses & progress" },
+  {
+    href: "/instructor",
+    label: "Instructor desk",
+    detail: "Teaching tools",
+  },
+  { href: "/admin", label: "Administration", detail: "Institute ops" },
+] as const;
+
+/**
+ * Shared editorial auth layout: institutional left panel + form column.
+ * Pages keep their own auth handlers; this shell is presentation only.
+ */
+export function AuthShell({
+  title,
+  description,
+  children,
+  variant = "login",
+  className,
+}: AuthShellProps) {
+  const panel = PANEL_COPY[variant];
+  const phones = instituteContact.phones.filter(Boolean);
+  const primaryPhone = phones[0];
+  const secondaryPhone = phones[1];
+  const address = instituteContact.addressLines.join(", ");
+
+  return (
+    <div
+      className={cn(
+        "flex min-h-[100dvh] flex-col bg-ground text-ink",
+        className,
+      )}
+    >
+      {/* Minimal top bar */}
+      <header className="shrink-0 border-b border-line bg-ground/95">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Logo compact />
+          <nav
+            className="flex items-center gap-1 sm:gap-2"
+            aria-label="Auth navigation"
+          >
+            <Link
+              href="/"
+              className="px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted transition-colors hover:text-petrol focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
+            >
+              Home
+            </Link>
+            <span className="hidden h-3 w-px bg-line sm:block" aria-hidden />
+            <Link
+              href="/courses"

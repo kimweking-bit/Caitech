@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
@@ -189,6 +190,28 @@ class NotificationEventListView(generics.ListAPIView):
     search_fields = ['type', 'recipient', 'status']
     ordering_fields = ['created_at', 'type', 'recipient', 'status']
     ordering = ['-created_at']
+
+
+
+class MyNotificationEventListView(generics.ListAPIView):
+    """Notifications for the authenticated user only."""
+
+    serializer_class = NotificationEventSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = AdminPagination
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['created_at', 'type', 'status']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        user = self.request.user
+        email = (getattr(user, 'email', '') or '').strip()
+        clauses = Q(pk__in=[])
+        if email:
+            clauses |= Q(recipient__iexact=email)
+        if any(f.name == 'related_user' for f in NotificationEvent._meta.fields):
+            clauses |= Q(related_user=user)
+        return NotificationEvent.objects.filter(clauses).distinct().order_by('-created_at')
 
 
 class InstructorRequestQueueView(generics.ListAPIView):

@@ -1,0 +1,50 @@
+"use client";
+
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { Logo } from "@/components/navigation/Logo";
+import { instituteContact } from "@/lib/content/institute";
+import { cn } from "@/lib/utils/cn";
+
+type Props = {
+  /** Mono eyebrow above the panel headline */
+  eyebrow: string;
+  /** Left-panel statement */
+  headline: string;
+  /** Supporting line under headline */
+  lead: string;
+  /** Optional technical micro-label */
+  detail?: string;
+  children: ReactNode;
+  /** Slightly different panel accent for register vs login */
+  variant?: "login" | "register" | "reset";
+};
+
+/**
+ * Premium auth composition for CAITECH.
+ * Replaces the generic centered-card-on-blank-page pattern.
+ */
+export function AuthShell({
+  eyebrow,
+  headline,
+  lead,
+  detail = "Technical education · Nairobi",
+  children,
+  variant = "login",
+}: Props) {
+  return (
+    <div className="flex min-h-[100dvh] flex-col bg-ground">
+      {/* Slim brand bar */}
+      <header className="border-b border-line bg-surface">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <Logo />
+          <nav className="flex items-center gap-4 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted">
+            <Link
+              href="/courses"
+              className="hover:text-petrol focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
+            >
+              Programmes
+            </Link>
+            <Link
+              href="/"
+              className="hover:text-petrol focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"

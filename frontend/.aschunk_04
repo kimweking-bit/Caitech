@@ -1,0 +1,50 @@
+
+            <div className="mt-8">{children}</div>
+          </div>
+        </section>
+      </div>
+
+      {/* Compact institutional footer */}
+      <footer className="shrink-0 border-t border-line bg-ground">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8 lg:px-8 lg:py-6">
+          <div className="min-w-0 max-w-xl">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted">
+              CAITECH Global Institute
+            </p>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
+              {address}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+              {primaryPhone ? (
+                <a
+                  href={`tel:${primaryPhone.replace(/\s/g, "")}`}
+                  className="hover:text-petrol focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
+                >
+                  {primaryPhone}
+                </a>
+              ) : null}
+              {secondaryPhone ? (
+                <>
+                  <span className="text-line" aria-hidden>
+                    ·
+                  </span>
+                  <a
+                    href={`tel:${secondaryPhone.replace(/\s/g, "")}`}
+                    className="hover:text-petrol focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
+                  >
+                    {secondaryPhone}
+                  </a>
+                </>
+              ) : null}
+              <span className="text-line" aria-hidden>
+                ·
+              </span>
+              <a
+                href={`mailto:${instituteContact.email}`}
+                className="hover:text-petrol focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
+              >
+                {instituteContact.email}
+              </a>
+            </div>
+          </div>
+

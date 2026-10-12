@@ -1,0 +1,40 @@
+      const loggedIn: AuthUser = await login(identifier.trim(), password);
+      router.replace(next ?? portalHome(loggedIn));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not sign you in.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <AuthShell
+      variant="login"
+      title="Sign in"
+      description="Use your username or email to open your CAITECH workspace."
+    >
+      <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
+        {error ? (
+          <div
+            role="alert"
+            className="border border-danger/25 bg-danger/5 px-3.5 py-3 text-sm text-danger"
+          >
+            {error}
+          </div>
+        ) : null}
+
+        <Input
+          id="identifier"
+          label="Username or email"
+          name="username"
+          autoComplete="username"
+          required
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          disabled={submitting}
+        />
+
+        <div className="flex flex-col gap-2">
+          <PasswordInput

@@ -1,0 +1,165 @@
+0001|"use client";
+0002|
+0003|import Link from "next/link";
+0004|import { useRouter, useSearchParams } from "next/navigation";
+0005|import { FormEvent, Suspense, useEffect, useState } from "react";
+0006|import { useAuth } from "@/components/auth/AuthProvider";
+0007|import { AuthFormTitle, AuthShell } from "@/components/auth/AuthShell";
+0008|import { Button } from "@/components/ui/Button";
+0009|import { Input } from "@/components/ui/Input";
+0010|import { PasswordInput } from "@/components/ui/PasswordInput";
+0011|import { ApiError, fieldErrors } from "@/lib/api/client";
+0012|import { portalHome } from "@/lib/portal/roles";
+0013|
+0014|function safeNext(raw: string | null): string | null {
+0015|  if (!raw) return null;
+0016|  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+0017|  return raw;
+0018|}
+0019|
+0020|function RegisterForm() {
+0021|  const { register, isAuthenticated, user, loading: authLoading } = useAuth();
+0022|  const router = useRouter();
+0023|  const search = useSearchParams();
+0024|  const next = safeNext(search.get("next"));
+0025|
+0026|  const [username, setUsername] = useState("");
+0027|  const [email, setEmail] = useState("");
+0028|  const [password, setPassword] = useState("");
+0029|  const [error, setError] = useState<string | null>(null);
+0030|  const [fields, setFields] = useState<Record<string, string>>({});
+0031|  const [submitting, setSubmitting] = useState(false);
+0032|
+0033|  useEffect(() => {
+0034|    if (!authLoading && isAuthenticated) {
+0035|      router.replace(next || portalHome(user));
+0036|    }
+0037|  }, [authLoading, isAuthenticated, next, router, user]);
+0038|
+0039|  async function onSubmit(e: FormEvent) {
+0040|    e.preventDefault();
+0041|    setError(null);
+0042|    setFields({});
+0043|    if (password.length < 8) {
+0044|      setFields({ password: "Use at least 8 characters." });
+0045|      return;
+0046|    }
+0047|    setSubmitting(true);
+0048|    try {
+0049|      await register({
+0050|        username: username.trim(),
+0051|        email: email.trim(),
+0052|        password,
+0053|      });
+0054|      // AuthProvider auto-logs in after register; route by role
+0055|      router.replace(next || "/student");
+0056|    } catch (err) {
+0057|      setFields(fieldErrors(err));
+0058|      setError(
+0059|        err instanceof ApiError
+0060|          ? err.message
+0061|          : "Could not create your account.",
+0062|      );
+0063|    } finally {
+0064|      setSubmitting(false);
+0065|    }
+0066|  }
+0067|
+0068|  return (
+0069|    <AuthShell
+0070|      variant="register"
+0071|      eyebrow="Join CAITECH"
+0072|      headline="Start your technical learning path."
+0073|      lead="Create an account to enrol in programmes, track progress, and access your learning workspace."
+0074|      detail="New learners · Kenya & beyond"
+0075|    >
+0076|      <AuthFormTitle
+0077|        title="Create account"
+0078|        description="You'll land in the student learning portal after registration."
+0079|      />
+0080|
+0081|      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+0082|        {error ? (
+0083|          <p
+0084|            role="alert"
+0085|            className="border border-line bg-ground px-3 py-2.5 text-sm text-petrol"
+0086|          >
+0087|            {error}
+0088|          </p>
+0089|        ) : null}
+0090|
+0091|        <Input
+0092|          id="reg-username"
+0093|          label="Username"
+0094|          name="username"
+0095|          autoComplete="username"
+0096|          value={username}
+0097|          onChange={(e) => setUsername(e.target.value)}
+0098|          required
+0099|          disabled={submitting}
+0100|          error={fields.username}
+0101|        />
+0102|
+0103|        <Input
+0104|          id="reg-email"
+0105|          label="Email"
+0106|          name="email"
+0107|          type="email"
+0108|          autoComplete="email"
+0109|          value={email}
+0110|          onChange={(e) => setEmail(e.target.value)}
+0111|          required
+0112|          disabled={submitting}
+0113|          error={fields.email}
+0114|        />
+0115|
+0116|        <PasswordInput
+0117|          id="reg-password"
+0118|          label="Password"
+0119|          name="password"
+0120|          autoComplete="new-password"
+0121|          value={password}
+0122|          onChange={(e) => setPassword(e.target.value)}
+0123|          required
+0124|          minLength={8}
+0125|          disabled={submitting}
+0126|          error={fields.password}
+0127|          hint="At least 8 characters."
+0128|        />
+0129|
+0130|        <Button
+0131|          type="submit"
+0132|          variant="lime"
+0133|          className="w-full justify-center"
+0134|          disabled={submitting || authLoading}
+0135|        >
+0136|          {submitting ? "Creating account…" : "Create account"}
+0137|        </Button>
+0138|      </form>
+0139|
+0140|      <p className="mt-8 border-t border-line pt-6 text-sm text-ink-muted">
+0141|        Already have an account?{" "}
+0142|        <Link
+0143|          href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+0144|          className="font-medium text-petrol underline-offset-4 hover:underline"
+0145|        >
+0146|          Sign in
+0147|        </Link>
+0148|      </p>
+0149|    </AuthShell>
+0150|  );
+0151|}
+0152|
+0153|export default function RegisterPage() {
+0154|  return (
+0155|    <Suspense
+0156|      fallback={
+0157|        <div className="flex min-h-[100dvh] items-center justify-center bg-ground font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+0158|          Loading…
+0159|        </div>
+0160|      }
+0161|    >
+0162|      <RegisterForm />
+0163|    </Suspense>
+0164|  );
+0165|}

@@ -1,0 +1,31 @@
+0161|                Contact
+0162|              </Link>
+0163|              <Link href="/faq" className="hover:text-ground">
+0164|                FAQ
+0165|              </Link>
+0166|            </div>
+0167|          </div>
+0168|        </div>
+0169|      </footer>
+0170|    </div>
+0171|  );
+0172|}
+0173|
+0174|export function AuthFormTitle({
+0175|  title,
+0176|  description,
+0177|}: {
+0178|  title: string;
+0179|  description?: string;
+0180|}) {
+0181|  return (
+0182|    <div className="mb-8">
+0183|      <h2 className="font-display text-2xl tracking-tight text-petrol sm:text-[1.75rem]">
+0184|        {title}
+0185|      </h2>
+0186|      {description ? (
+0187|        <p className="mt-2 text-sm leading-relaxed text-ink-muted">{description}</p>
+0188|      ) : null}
+0189|    </div>
+0190|  );
+0191|}

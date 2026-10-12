@@ -1,0 +1,50 @@
+"use client";
+
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { Logo } from "@/components/navigation/Logo";
+import { instituteContact } from "@/lib/content/institute";
+import { cn } from "@/lib/utils/cn";
+
+export type AuthShellVariant = "login" | "register" | "forgot" | "reset";
+
+type AuthShellProps = {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  /** Left-panel editorial tone; defaults to login. */
+  variant?: AuthShellVariant;
+  className?: string;
+};
+
+const PANEL_COPY: Record<
+  AuthShellVariant,
+  { eyebrow: string; headline: string; support: string }
+> = {
+  login: {
+    eyebrow: "Learner portal",
+    headline: "Build the skills behind what comes next.",
+    support:
+      "Sign in to continue coursework, track progress, and access your CAITECH learning workspace.",
+  },
+  register: {
+    eyebrow: "Join CAITECH",
+    headline: "Start your learning journey with purpose.",
+    support:
+      "Create an account to explore programmes, enrol in courses, and begin building practical technical skill.",
+  },
+  forgot: {
+    eyebrow: "Account recovery",
+    headline: "Regain access with a secure reset link.",
+    support:
+      "We will email instructions to the address on your CAITECH account so you can set a new password.",
+  },
+  reset: {
+    eyebrow: "Account recovery",
+    headline: "Choose a new password and return to class.",
+    support:
+      "Set a strong password to protect your learner profile, enrolments, and course progress.",
+  },
+};
+
+const DESTINATIONS = [

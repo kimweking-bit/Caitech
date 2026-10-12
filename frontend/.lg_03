@@ -1,0 +1,26 @@
+        <p className="mt-3 font-mono text-[10px] leading-relaxed tracking-wide text-ink-muted/80">
+          Demo admin:{" "}
+          <span className="text-petrol">admin</span> /{" "}
+          <span className="text-petrol">admin123</span>
+        </p>
+      </div>
+    </AuthShell>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthShell variant="login" title="Sign in" description="Loading…">
+          <div
+            className="h-40 animate-pulse rounded-[var(--radius-md)] bg-line/40"
+            aria-hidden
+          />
+        </AuthShell>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}

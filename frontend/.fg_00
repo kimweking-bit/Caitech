@@ -1,0 +1,40 @@
+"use client";
+
+import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { requestPasswordReset } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      await requestPasswordReset(email.trim());
+      setDone(true);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not start password reset.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <AuthShell
+      variant="forgot"
+      title="Reset password"
+      description="Enter the email on your account. If it matches a CAITECH profile, we will send reset instructions."
+    >

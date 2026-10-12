@@ -1,0 +1,50 @@
+          </div>
+
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-5">
+            <FooterColumn title="Learn" links={footerNav.learn} />
+            <FooterColumn
+              title="Institution"
+              links={[
+                ...footerNav.institute,
+                { label: "FAQs", href: "/faq" },
+              ]}
+            />
+            <FooterColumn
+              title="Student"
+              links={footerNav.account.filter((l) => l.href !== "/cart")}
+            />
+          </div>
+
+          <div className="lg:col-span-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ground/55">
+              Contact
+            </p>
+            <address className="mt-4 space-y-1 not-italic text-sm text-ground/85">
+              {instituteContact.addressLines.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </address>
+            <ul className="mt-4 space-y-1 text-sm">
+              {instituteContact.phones.map((phone) => (
+                <li key={phone}>
+                  <a
+                    className="hover:text-lime"
+                    href={`tel:${phone.replace(/\s+/g, "")}`}
+                  >
+                    {phone}
+                  </a>
+                </li>
+              ))}
+              <li>
+                <a
+                  className="hover:text-lime"
+                  href={`mailto:${instituteContact.email}`}
+                >
+                  {instituteContact.email}
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-12 max-w-md border border-white/15 p-5">

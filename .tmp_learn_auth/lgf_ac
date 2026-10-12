@@ -1,0 +1,45 @@
+0091|            className="border border-line bg-ground px-3 py-2.5 text-sm text-petrol"
+0092|          >
+0093|            {error}
+0094|          </p>
+0095|        ) : null}
+0096|
+0097|        <Input
+0098|          id="login-identifier"
+0099|          label="Username or email"
+0100|          name="username"
+0101|          autoComplete="username"
+0102|          value={identifier}
+0103|          onChange={(e) => setIdentifier(e.target.value)}
+0104|          required
+0105|          disabled={submitting}
+0106|          error={fields.username || fields.email}
+0107|        />
+0108|
+0109|        <div className="space-y-2">
+0110|          <PasswordInput
+0111|            id="login-password"
+0112|            label="Password"
+0113|            name="password"
+0114|            autoComplete="current-password"
+0115|            value={password}
+0116|            onChange={(e) => setPassword(e.target.value)}
+0117|            required
+0118|            disabled={submitting}
+0119|            error={fields.password}
+0120|          />
+0121|          <div className="flex justify-end">
+0122|            <Link
+0123|              href="/forgot-password"
+0124|              className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted underline-offset-4 hover:text-petrol hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
+0125|            >
+0126|              Forgot password?
+0127|            </Link>
+0128|          </div>
+0129|        </div>
+0130|
+0131|        <Button
+0132|          type="submit"
+0133|          variant="lime"
+0134|          className="w-full justify-center"
+0135|          disabled={submitting || authLoading}

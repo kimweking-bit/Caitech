@@ -70,12 +70,12 @@ export default function StudentDashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Student portal"
-        title="Your learning"
-        description="Continue where you left off, track progress, and keep assignments on schedule."
+        eyebrow="Learning workspace"
+        title="Continue learning"
+        description="Your courses, progress, and what needs attention next — personal learning, not operations."
         actions={
-          <Button href="/courses" variant="secondary">
-            Browse programmes
+          <Button href="/student/learning" variant="lime">
+            My learning
           </Button>
         }
       />

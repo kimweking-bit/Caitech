@@ -419,7 +419,9 @@ export type NotificationEvent = {
   type: string;
   recipient: string;
   status: string;
-  error: string;
+  error?: string;
+  title?: string;
+  body?: string;
   created_at: string;
 };
 

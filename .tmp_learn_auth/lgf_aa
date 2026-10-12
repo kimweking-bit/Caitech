@@ -1,0 +1,45 @@
+0001|"use client";
+0002|
+0003|import Link from "next/link";
+0004|import { useRouter, useSearchParams } from "next/navigation";
+0005|import { FormEvent, Suspense, useEffect, useState } from "react";
+0006|import { useAuth } from "@/components/auth/AuthProvider";
+0007|import { AuthFormTitle, AuthShell } from "@/components/auth/AuthShell";
+0008|import { Button } from "@/components/ui/Button";
+0009|import { Input } from "@/components/ui/Input";
+0010|import { PasswordInput } from "@/components/ui/PasswordInput";
+0011|import { ApiError, fieldErrors } from "@/lib/api/client";
+0012|import { portalHome } from "@/lib/portal/roles";
+0013|import type { AuthUser } from "@/types/api";
+0014|
+0015|function safeNext(raw: string | null): string | null {
+0016|  if (!raw) return null;
+0017|  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+0018|  return raw;
+0019|}
+0020|
+0021|function LoginForm() {
+0022|  const { login, isAuthenticated, user, loading: authLoading } = useAuth();
+0023|  const router = useRouter();
+0024|  const search = useSearchParams();
+0025|  const next = safeNext(search.get("next"));
+0026|
+0027|  const [identifier, setIdentifier] = useState("");
+0028|  const [password, setPassword] = useState("");
+0029|  const [error, setError] = useState<string | null>(null);
+0030|  const [fields, setFields] = useState<Record<string, string>>({});
+0031|  const [submitting, setSubmitting] = useState(false);
+0032|
+0033|  function goAfterAuth(u: AuthUser | null | undefined) {
+0034|    router.replace(next || portalHome(u));
+0035|  }
+0036|
+0037|  useEffect(() => {
+0038|    if (!authLoading && isAuthenticated) {
+0039|      goAfterAuth(user);
+0040|    }
+0041|    // eslint-disable-next-line react-hooks/exhaustive-deps
+0042|  }, [authLoading, isAuthenticated, user, next, router]);
+0043|
+0044|  async function onSubmit(e: FormEvent) {
+0045|    e.preventDefault();

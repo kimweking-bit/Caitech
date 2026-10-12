@@ -1,0 +1,65 @@
+0001|"use client";
+0002|
+0003|import { useState, type InputHTMLAttributes } from "react";
+0004|import { cn } from "@/lib/utils/cn";
+0005|
+0006|type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
+0007|  label: string;
+0008|  hint?: string;
+0009|  error?: string;
+0010|  id: string;
+0011|};
+0012|
+0013|export function PasswordInput({
+0014|  label,
+0015|  hint,
+0016|  error,
+0017|  id,
+0018|  className,
+0019|  ...rest
+0020|}: Props) {
+0021|  const [visible, setVisible] = useState(false);
+0022|  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+0023|
+0024|  return (
+0025|    <div className="flex flex-col gap-1.5">
+0026|      <label htmlFor={id} className="text-sm font-medium text-ink">
+0027|        {label}
+0028|      </label>
+0029|      <div className="relative">
+0030|        <input
+0031|          id={id}
+0032|          type={visible ? "text" : "password"}
+0033|          aria-invalid={Boolean(error) || undefined}
+0034|          aria-describedby={describedBy}
+0035|          className={cn(
+0036|            "h-11 w-full border bg-surface px-3 pr-16 text-base text-ink",
+0037|            "rounded-[var(--radius-md)] placeholder:text-ink-muted/70",
+0038|            "border-line focus:border-petrol focus:outline-none focus:ring-1 focus:ring-petrol",
+0039|            error && "border-danger focus:border-danger focus:ring-danger",
+0040|            className,
+0041|          )}
+0042|          {...rest}
+0043|        />
+0044|        <button
+0045|          type="button"
+0046|          onClick={() => setVisible((v) => !v)}
+0047|          className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted hover:text-petrol focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-petrol"
+0048|          aria-label={visible ? "Hide password" : "Show password"}
+0049|          aria-pressed={visible}
+0050|        >
+0051|          {visible ? "Hide" : "Show"}
+0052|        </button>
+0053|      </div>
+0054|      {error ? (
+0055|        <p id={`${id}-error`} className="text-sm text-danger" role="alert">
+0056|          {error}
+0057|        </p>
+0058|      ) : hint ? (
+0059|        <p id={`${id}-hint`} className="text-sm text-ink-muted">
+0060|          {hint}
+0061|        </p>
+0062|      ) : null}
+0063|    </div>
+0064|  );
+0065|}

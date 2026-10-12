@@ -1,0 +1,45 @@
+0046|    setError(null);
+0047|    setFields({});
+0048|    const id = identifier.trim();
+0049|    if (!id || !password) {
+0050|      setError("Enter your username or email and password.");
+0051|      return;
+0052|    }
+0053|    setSubmitting(true);
+0054|    try {
+0055|      const me = await login(id, password);
+0056|      goAfterAuth(me);
+0057|    } catch (err) {
+0058|      setFields(fieldErrors(err));
+0059|      let msg =
+0060|        err instanceof ApiError ? err.message : "Could not sign you in.";
+0061|      if (
+0062|        /no active account/i.test(msg) ||
+0063|        /invalid credentials/i.test(msg) ||
+0064|        /unable to log in/i.test(msg)
+0065|      ) {
+0066|        msg = "Those credentials do not match our records.";
+0067|      }
+0068|      setError(msg);
+0069|    } finally {
+0070|      setSubmitting(false);
+0071|    }
+0072|  }
+0073|
+0074|  return (
+0075|    <AuthShell
+0076|      variant="login"
+0077|      eyebrow="Portal access"
+0078|      headline="Build the skills behind what comes next."
+0079|      lead="Sign in to your CAITECH learning, teaching, or operations workspace."
+0080|      detail="Secure access · Nairobi CBD"
+0081|    >
+0082|      <AuthFormTitle
+0083|        title="Sign in"
+0084|        description="Use your CAITECH username or email."
+0085|      />
+0086|
+0087|      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+0088|        {error ? (
+0089|          <p
+0090|            role="alert"

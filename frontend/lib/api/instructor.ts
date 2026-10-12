@@ -37,12 +37,19 @@ export async function getInstructorOverview(): Promise<InstructorOverview> {
 }
 
 export async function getInstructorStudents(
-  page = 1,
+  pageOrOpts: number | { page?: number; search?: string; course?: number } = 1,
   search = "",
 ): Promise<PaginatedResponse<AdminEnrollment>> {
+  const page =
+    typeof pageOrOpts === "number" ? pageOrOpts : pageOrOpts.page || 1;
+  const qSearch =
+    typeof pageOrOpts === "number" ? search : pageOrOpts.search || "";
+  const course =
+    typeof pageOrOpts === "number" ? undefined : pageOrOpts.course;
   const params = new URLSearchParams();
   if (page > 1) params.set("page", String(page));
-  if (search.trim()) params.set("search", search.trim());
+  if (qSearch.trim()) params.set("search", qSearch.trim());
+  if (course) params.set("course", String(course));
   const q = params.toString();
   return apiFetch<PaginatedResponse<AdminEnrollment>>(
     `/instructor/students/${q ? `?${q}` : ""}`,

@@ -1,0 +1,40 @@
+0001|"use client";
+0002|
+0003|import Link from "next/link";
+0004|import type { ReactNode } from "react";
+0005|import { Logo } from "@/components/navigation/Logo";
+0006|import { instituteContact } from "@/lib/content/institute";
+0007|import { cn } from "@/lib/utils/cn";
+0008|
+0009|type Props = {
+0010|  /** Mono eyebrow above the panel headline */
+0011|  eyebrow: string;
+0012|  /** Left-panel statement */
+0013|  headline: string;
+0014|  /** Supporting line under headline */
+0015|  lead: string;
+0016|  /** Optional technical micro-label */
+0017|  detail?: string;
+0018|  children: ReactNode;
+0019|  /** Slightly different panel accent for register vs login */
+0020|  variant?: "login" | "register" | "reset";
+0021|};
+0022|
+0023|/**
+0024| * Premium auth composition for CAITECH.
+0025| * Replaces the generic centered-card-on-blank-page pattern.
+0026| */
+0027|export function AuthShell({
+0028|  eyebrow,
+0029|  headline,
+0030|  lead,
+0031|  detail = "Technical education · Nairobi",
+0032|  children,
+0033|  variant = "login",
+0034|}: Props) {
+0035|  return (
+0036|    <div className="flex min-h-[100dvh] flex-col bg-ground">
+0037|      {/* Slim brand bar */}
+0038|      <header className="border-b border-line bg-surface">
+0039|        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+0040|          <Logo />

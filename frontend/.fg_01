@@ -1,0 +1,40 @@
+      {done ? (
+        <div className="border border-line bg-surface px-4 py-5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-lime-ink/70">
+            Request sent
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-ink">
+            If an account exists for{" "}
+            <span className="font-medium text-petrol">{email}</span>, check your
+            inbox for a reset link. The message may take a few minutes to
+            arrive.
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
+          {error ? (
+            <div
+              role="alert"
+              className="border border-danger/25 bg-danger/5 px-3.5 py-3 text-sm text-danger"
+            >
+              {error}
+            </div>
+          ) : null}
+
+          <Input
+            id="email"
+            label="Email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={submitting}
+          />
+
+          <Button
+            type="submit"
+            variant="lime"
+            size="lg"
+            className="w-full justify-center"

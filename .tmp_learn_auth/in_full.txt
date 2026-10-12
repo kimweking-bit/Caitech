@@ -1,0 +1,50 @@
+0001|import type { InputHTMLAttributes } from "react";
+0002|import { cn } from "@/lib/utils/cn";
+0003|
+0004|export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
+0005|  label: string;
+0006|  hint?: string;
+0007|  error?: string;
+0008|  id: string;
+0009|};
+0010|
+0011|export function Input({
+0012|  label,
+0013|  hint,
+0014|  error,
+0015|  id,
+0016|  className,
+0017|  ...rest
+0018|}: InputProps) {
+0019|  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+0020|
+0021|  return (
+0022|    <div className="flex flex-col gap-1.5">
+0023|      <label htmlFor={id} className="text-sm font-medium text-ink">
+0024|        {label}
+0025|      </label>
+0026|      <input
+0027|        id={id}
+0028|        aria-invalid={Boolean(error) || undefined}
+0029|        aria-describedby={describedBy}
+0030|        className={cn(
+0031|          "h-11 w-full rounded-[var(--radius-md)] border bg-surface px-3 text-base text-ink",
+0032|          "placeholder:text-ink-muted/70",
+0033|          "border-line focus:border-petrol focus:outline-none focus:ring-1 focus:ring-petrol",
+0034|          error && "border-danger focus:border-danger focus:ring-danger",
+0035|          className,
+0036|        )}
+0037|        {...rest}
+0038|      />
+0039|      {error ? (
+0040|        <p id={`${id}-error`} className="text-sm text-danger" role="alert">
+0041|          {error}
+0042|        </p>
+0043|      ) : hint ? (
+0044|        <p id={`${id}-hint`} className="text-sm text-ink-muted">
+0045|          {hint}
+0046|        </p>
+0047|      ) : null}
+0048|    </div>
+0049|  );
+0050|}

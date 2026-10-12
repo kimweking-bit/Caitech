@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { getStudentDashboard } from "@/lib/api/lms";
 import { displayTitle } from "@/lib/utils/display";

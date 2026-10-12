@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Do not advertise the framework stack on HTTP responses.
+  poweredByHeader: false,
   turbopack: {
     rules: {
       "*.css": {

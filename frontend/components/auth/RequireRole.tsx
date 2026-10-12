@@ -4,23 +4,14 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { portalHome } from "@/lib/portal/roles";
+import {
+  canAccessPortal,
+  portalHome,
+  type PortalRole,
+} from "@/lib/portal/roles";
 import { Button } from "@/components/ui/Button";
 
-type Role = "student" | "instructor" | "admin" | "staff";
-
-function hasRole(
-  user: NonNullable<ReturnType<typeof useAuth>["user"]>,
-  role: Role,
-): boolean {
-  if (role === "staff" || role === "admin") return Boolean(user.is_staff);
-  if (role === "instructor")
-    return Boolean(
-      user.is_instructor || user.is_verified_instructor || user.is_staff,
-    );
-  // student portal: learners and staff (support/demo)
-  return Boolean(user.is_student || user.is_staff);
-}
+type Role = PortalRole | "staff";
 
 export function RequireRole({
   role,
@@ -32,6 +23,7 @@ export function RequireRole({
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const required: PortalRole = role === "staff" ? "admin" : role;
 
   useEffect(() => {
     if (loading) return;
@@ -52,7 +44,7 @@ export function RequireRole({
 
   if (!isAuthenticated || !user) return null;
 
-  if (!hasRole(user, role)) {
+  if (!canAccessPortal(user, required)) {
     const home = portalHome(user);
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
@@ -63,7 +55,8 @@ export function RequireRole({
           You do not have access
         </h1>
         <p className="mt-3 text-sm text-ink-muted">
-          This area requires {role === "admin" ? "admin" : role} permissions.
+          This area is the {required} portal. Your account is routed to a
+          different workspace.
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Button href={home} variant="lime">

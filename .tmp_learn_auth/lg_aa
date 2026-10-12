@@ -1,0 +1,50 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { AuthFormTitle, AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
+import { ApiError, fieldErrors } from "@/lib/api/client";
+import { portalHome } from "@/lib/portal/roles";
+import type { AuthUser } from "@/types/api";
+
+function safeNext(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  return raw;
+}
+
+function LoginForm() {
+  const { login, isAuthenticated, user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const search = useSearchParams();
+  const next = safeNext(search.get("next"));
+
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  function goAfterAuth(u: AuthUser | null | undefined) {
+    router.replace(next || portalHome(u));
+  }
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      goAfterAuth(user);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, isAuthenticated, user, next, router]);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setFields({});
+    const id = identifier.trim();
+    if (!id || !password) {
+      setError("Enter your username or email and password.");

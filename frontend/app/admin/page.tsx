@@ -147,9 +147,9 @@ export default function AdminOverviewPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Operations"
-        title="Institution overview"
-        description="Live figures from CAITECH APIs. Empty values mean no rows in the current response window."
+        eyebrow="Institutional control center"
+        title="CAITECH operations"
+        description="Institution-wide live figures from CAITECH APIs. Empty values mean no rows in the current response window."
       />
       {loading ? <LoadingBlock /> : null}
       {error ? (

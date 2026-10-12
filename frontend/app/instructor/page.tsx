@@ -52,11 +52,11 @@ export default function InstructorDashboardPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Teaching workspace"
-        title="Instructor home"
-        description="Assigned programmes, student volume, and work that needs attention."
+        title="Your classroom pulse"
+        description="Teaching workspace — assigned programmes, student performance, and grading queue. Not institutional admin."
         actions={
           <Button href="/instructor/grading" variant="lime">
-            Open grading
+            Open grading queue
           </Button>
         }
       />

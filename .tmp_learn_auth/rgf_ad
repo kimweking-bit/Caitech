@@ -1,0 +1,30 @@
+0136|          {submitting ? "Creating account…" : "Create account"}
+0137|        </Button>
+0138|      </form>
+0139|
+0140|      <p className="mt-8 border-t border-line pt-6 text-sm text-ink-muted">
+0141|        Already have an account?{" "}
+0142|        <Link
+0143|          href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+0144|          className="font-medium text-petrol underline-offset-4 hover:underline"
+0145|        >
+0146|          Sign in
+0147|        </Link>
+0148|      </p>
+0149|    </AuthShell>
+0150|  );
+0151|}
+0152|
+0153|export default function RegisterPage() {
+0154|  return (
+0155|    <Suspense
+0156|      fallback={
+0157|        <div className="flex min-h-[100dvh] items-center justify-center bg-ground font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+0158|          Loading…
+0159|        </div>
+0160|      }
+0161|    >
+0162|      <RegisterForm />
+0163|    </Suspense>
+0164|  );
+0165|}

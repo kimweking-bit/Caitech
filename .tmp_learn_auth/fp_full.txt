@@ -1,0 +1,100 @@
+0001|"use client";
+0002|
+0003|import Link from "next/link";
+0004|import { FormEvent, useState } from "react";
+0005|import { requestPasswordReset } from "@/lib/api/auth";
+0006|import { ApiError } from "@/lib/api/client";
+0007|import { AuthFormTitle, AuthShell } from "@/components/auth/AuthShell";
+0008|import { Button } from "@/components/ui/Button";
+0009|import { Input } from "@/components/ui/Input";
+0010|
+0011|export default function ForgotPasswordPage() {
+0012|  const [email, setEmail] = useState("");
+0013|  const [error, setError] = useState<string | null>(null);
+0014|  const [submitting, setSubmitting] = useState(false);
+0015|  const [sent, setSent] = useState(false);
+0016|
+0017|  async function onSubmit(e: FormEvent) {
+0018|    e.preventDefault();
+0019|    setError(null);
+0020|    setSubmitting(true);
+0021|    try {
+0022|      await requestPasswordReset(email.trim());
+0023|      setSent(true);
+0024|    } catch (err) {
+0025|      setError(
+0026|        err instanceof ApiError
+0027|          ? err.message
+0028|          : "Could not start password reset.",
+0029|      );
+0030|    } finally {
+0031|      setSubmitting(false);
+0032|    }
+0033|  }
+0034|
+0035|  return (
+0036|    <AuthShell
+0037|      variant="reset"
+0038|      eyebrow="Account recovery"
+0039|      headline="Reset access to your workspace."
+0040|      lead="Enter the email on your CAITECH account. If it matches our records, we will send reset instructions."
+0041|      detail="Secure recovery · CAITECH"
+0042|    >
+0043|      <AuthFormTitle
+0044|        title="Forgot password"
+0045|        description="We’ll email a secure link if the address is registered."
+0046|      />
+0047|
+0048|      {sent ? (
+0049|        <div className="space-y-4 border border-line bg-ground px-4 py-5">
+0050|          <p className="text-sm text-petrol">
+0051|            If an account exists for that email, reset instructions are on the
+0052|            way. Check your inbox and spam folder.
+0053|          </p>
+0054|          <Link
+0055|            href="/login"
+0056|            className="inline-block font-medium text-petrol underline-offset-4 hover:underline"
+0057|          >
+0058|            Back to sign in
+0059|          </Link>
+0060|        </div>
+0061|      ) : (
+0062|        <form onSubmit={onSubmit} className="space-y-5" noValidate>
+0063|          {error ? (
+0064|            <p
+0065|              role="alert"
+0066|              className="border border-line bg-ground px-3 py-2.5 text-sm text-petrol"
+0067|            >
+0068|              {error}
+0069|            </p>
+0070|          ) : null}
+0071|          <Input
+0072|            id="forgot-email"
+0073|            label="Email"
+0074|            name="email"
+0075|            type="email"
+0076|            autoComplete="email"
+0077|            required
+0078|            value={email}
+0079|            onChange={(e) => setEmail(e.target.value)}
+0080|            disabled={submitting}
+0081|          />
+0082|          <Button
+0083|            type="submit"
+0084|            variant="lime"
+0085|            className="w-full justify-center"
+0086|            disabled={submitting}
+0087|          >
+0088|            {submitting ? "Sending…" : "Send reset link"}
+0089|          </Button>
+0090|        </form>
+0091|      )}
+0092|
+0093|      <p className="mt-8 border-t border-line pt-6 text-sm text-ink-muted">
+0094|        <Link href="/login" className="text-petrol hover:underline">
+0095|          ← Sign in
+0096|        </Link>
+0097|      </p>
+0098|    </AuthShell>
+0099|  );
+0100|}

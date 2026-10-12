@@ -1,0 +1,50 @@
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className="group flex items-baseline justify-between gap-4 py-3.5 transition-colors hover:bg-ground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-lime"
+                    >
+                      <span className="text-sm text-ground/90 group-hover:text-lime">
+                        {item.label}
+                      </span>
+                      <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-ground/40">
+                        {item.detail}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-6 max-w-sm font-mono text-[10px] leading-relaxed tracking-wide text-ground/40">
+                CAITECH Global Institute · Nairobi · Practical technical
+                education
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        {/* Right — form column */}
+        <section className="relative flex flex-1 flex-col bg-ground">
+          <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10 sm:px-6 sm:py-12 lg:px-10 lg:py-14">
+            {/* Mobile-only institutional intro */}
+            <div className="mb-8 border-b border-line pb-6 lg:hidden">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-petrol/70">
+                {panel.eyebrow}
+              </p>
+              <p className="mt-2 font-display text-xl leading-snug text-petrol">
+                {panel.headline}
+              </p>
+            </div>
+
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                Secure access
+              </p>
+              <h2 className="mt-2 font-display text-[1.65rem] leading-tight tracking-tight text-petrol sm:text-3xl">
+                {title}
+              </h2>
+              {description ? (
+                <p className="mt-2.5 text-sm leading-relaxed text-ink-muted">
+                  {description}
+                </p>
+              ) : null}
+              <div className="mt-6 h-px w-full bg-line" aria-hidden />
+            </div>

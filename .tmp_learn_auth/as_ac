@@ -1,0 +1,50 @@
+              <ul className="space-y-1.5 font-mono text-[11px] text-ground/50">
+                <li>Student · learning workspace</li>
+                <li>Instructor · teaching workspace</li>
+                <li>Admin · institutional operations</li>
+              </ul>
+            </div>
+
+            {/* Geometric corner mark */}
+            <div
+              className="pointer-events-none absolute bottom-0 right-0 h-24 w-24 border-l border-t border-lime/30"
+              aria-hidden
+            />
+          </aside>
+
+          {/* Form panel */}
+          <section className="relative flex flex-col justify-center bg-surface px-6 py-10 sm:px-10 lg:col-span-7 lg:px-14 lg:py-14">
+            <div className="mx-auto w-full max-w-md">{children}</div>
+          </section>
+        </div>
+      </main>
+
+      {/* Compact institutional footer */}
+      <footer className="border-t border-line bg-petrol-deep text-ground">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+          <div>
+            <p className="font-display text-base tracking-tight">
+              CAITECH Global Institute
+            </p>
+            <p className="mt-1 max-w-sm text-xs leading-relaxed text-ground/60">
+              {instituteContact.addressLines.join(", ")}
+            </p>
+          </div>
+          <div className="flex flex-col gap-1 font-mono text-[11px] text-ground/65 sm:items-end">
+            {instituteContact.phones.map((p) => (
+              <a
+                key={p}
+                href={`tel:${p.replace(/\s/g, "")}`}
+                className="hover:text-lime focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
+              >
+                {p}
+              </a>
+            ))}
+            <a
+              href={`mailto:${instituteContact.email}`}
+              className="hover:text-lime focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
+            >
+              {instituteContact.email}
+            </a>
+          </div>
+        </div>

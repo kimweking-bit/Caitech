@@ -1,0 +1,50 @@
+import Link from "next/link";
+import { footerNav } from "@/lib/content/nav";
+import { instituteContact } from "@/lib/content/institute";
+import { site } from "@/lib/content/stub-copy";
+import { NewsletterForm } from "@/components/content/NewsletterForm";
+import { Logo } from "@/components/navigation/Logo";
+import { Container } from "@/components/ui/Container";
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string;
+  links: readonly { label: string; href: string }[];
+}) {
+  return (
+    <div>
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ground/55">
+        {title}
+      </p>
+      <ul className="mt-4 flex flex-col gap-2.5">
+        {links.map((link) => (
+          <li key={link.href + link.label}>
+            <Link
+              href={link.href}
+              className="text-sm text-ground/85 transition-colors hover:text-lime"
+            >
+              {link.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function SiteFooter() {
+  const year = new Date().getFullYear();
+
+  return (
+    <footer className="border-t border-petrol-muted bg-petrol-deep text-ground">
+      <Container className="py-14 md:py-16">
+        <div className="grid gap-12 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <Logo inverse compact />
+            <p className="mt-5 max-w-sm text-sm leading-relaxed text-ground/70">
+              {site.tagline}. Technical training in CAD, engineering, ICT,
+              electronics, construction technology and applied digital skills —
+              Nairobi CBD.
+            </p>

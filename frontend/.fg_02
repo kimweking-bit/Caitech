@@ -1,0 +1,20 @@
+            disabled={submitting}
+          >
+            {submitting ? "Sending…" : "Send reset link"}
+          </Button>
+        </form>
+      )}
+
+      <div className="mt-8 border-t border-line pt-6">
+        <p className="text-sm text-ink-muted">
+          <Link
+            href="/login"
+            className="font-medium text-petrol underline decoration-line underline-offset-4 transition-colors hover:decoration-petrol focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
+          >
+            ← Back to sign in
+          </Link>
+        </p>
+      </div>
+    </AuthShell>
+  );
+}

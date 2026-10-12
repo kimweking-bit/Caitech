@@ -1,0 +1,45 @@
+0091|        <Input
+0092|          id="reg-username"
+0093|          label="Username"
+0094|          name="username"
+0095|          autoComplete="username"
+0096|          value={username}
+0097|          onChange={(e) => setUsername(e.target.value)}
+0098|          required
+0099|          disabled={submitting}
+0100|          error={fields.username}
+0101|        />
+0102|
+0103|        <Input
+0104|          id="reg-email"
+0105|          label="Email"
+0106|          name="email"
+0107|          type="email"
+0108|          autoComplete="email"
+0109|          value={email}
+0110|          onChange={(e) => setEmail(e.target.value)}
+0111|          required
+0112|          disabled={submitting}
+0113|          error={fields.email}
+0114|        />
+0115|
+0116|        <PasswordInput
+0117|          id="reg-password"
+0118|          label="Password"
+0119|          name="password"
+0120|          autoComplete="new-password"
+0121|          value={password}
+0122|          onChange={(e) => setPassword(e.target.value)}
+0123|          required
+0124|          minLength={8}
+0125|          disabled={submitting}
+0126|          error={fields.password}
+0127|          hint="At least 8 characters."
+0128|        />
+0129|
+0130|        <Button
+0131|          type="submit"
+0132|          variant="lime"
+0133|          className="w-full justify-center"
+0134|          disabled={submitting || authLoading}
+0135|        >

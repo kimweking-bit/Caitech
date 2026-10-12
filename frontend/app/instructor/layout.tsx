@@ -4,7 +4,7 @@ import { RequireRole } from "@/components/auth/RequireRole";
 import { PortalShell } from "@/components/portal/PortalShell";
 import type { PortalNavItem } from "@/components/portal/types";
 
-const nav: PortalNavItem[] = [
+const NAV: PortalNavItem[] = [
   { href: "/instructor", label: "Dashboard", exact: true },
   { href: "/instructor/courses", label: "My Courses" },
   { href: "/instructor/students", label: "Students" },
@@ -21,7 +21,7 @@ export default function InstructorLayout({
 }) {
   return (
     <RequireRole role="instructor">
-      <PortalShell kind="instructor" nav={nav}>
+      <PortalShell kind="instructor" nav={NAV}>
         {children}
       </PortalShell>
     </RequireRole>
