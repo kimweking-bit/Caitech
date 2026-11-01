@@ -6,27 +6,28 @@ import { Container } from "@/components/ui/Container";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
 /**
- * Full-bleed editorial homepage hero.
- * Layers: photograph → gradient scrim (sibling) → left copy.
- * LCP: priority + sizes=100vw + quality 90. No filters on the image.
+ * Photography-led cinematic hero.
+ * Dark gradient scrim (not white wash) so the lab photograph stays visible
+ * while type remains AA-readable.
  */
 export function HomeHero() {
   return (
     <section className="home-hero" aria-labelledby="home-hero-heading">
-      <div className="home-hero__media" aria-hidden="true">
+      <div className="home-hero__media relative" aria-hidden="true">
         <Image
           src={homeImages.hero.src}
-          alt=""
+          alt={homeImages.hero.alt || ""}
           fill
           priority
-          quality={90}
           sizes="100vw"
           className="home-hero__img"
         />
-        <div className="home-hero__scrim" />
       </div>
 
-      <Container className="home-hero__inner">
+      {/* Dark cinematic scrim — keeps photography legible, not bleached */}
+      <div className="home-hero__scrim" aria-hidden="true" />
+
+      <Container className="home-hero__inner relative z-10">
         <div className="home-hero__copy">
           <Eyebrow className="home-hero__eyebrow">{hero.eyebrow}</Eyebrow>
           <span className="home-hero__rule" aria-hidden="true" />
@@ -43,7 +44,7 @@ export function HomeHero() {
             </Button>
             <Button
               href={hero.secondaryCta.href}
-              variant="secondary"
+              variant="ghost"
               className="home-hero__btn home-hero__btn--secondary"
             >
               {hero.secondaryCta.label}
@@ -51,17 +52,19 @@ export function HomeHero() {
           </div>
         </div>
 
-        <footer className="home-hero__foot">
+        <div className="home-hero__foot">
           <p className="home-hero__meta">
             {hero.meta.map((item, i) => (
               <span key={item}>
-                {i > 0 ? <span className="home-hero__meta-sep" aria-hidden="true">·</span> : null}
+                {i > 0 ? <span className="home-hero__meta-sep" aria-hidden="true">
+                  ·
+                </span> : null}
                 {item}
               </span>
             ))}
           </p>
           <p className="home-hero__figure">{hero.figureLabel}</p>
-        </footer>
+        </div>
       </Container>
     </section>
   );

@@ -100,8 +100,7 @@ export default function StudentLearningPage() {
             <div className="aspect-[16/9] bg-petrol/5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={resolveCourseImage({
-                  slug: e.course_slug,
+                src={resolveCourseImage({ slug: e.course_slug,
                   title: e.course_title,
                   apiImageUrl: e.course_image,
                 })}

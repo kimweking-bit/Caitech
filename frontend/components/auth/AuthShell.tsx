@@ -1,24 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { SiteFooter } from "@/components/layout/SiteFooter";
-import { Logo } from "@/components/navigation/Logo";
 import { instituteMetrics } from "@/lib/content/institute";
 import { cn } from "@/lib/utils/cn";
-
-export type AuthShellTone = "login" | "register" | "recover" | "forgot" | "reset";
-export type AuthShellVariant = AuthShellTone;
-
-type AuthShellProps = {
-  title: string;
-  detail?: string;
-  description?: string;
-  children: ReactNode;
-  tone?: AuthShellTone;
-  variant?: AuthShellVariant;
-  className?: string;
-};
 
 type PanelCopy = {
   eyebrow: string;
@@ -27,54 +11,60 @@ type PanelCopy = {
   footnote: string;
 };
 
+type AuthShellProps = {
+  children: ReactNode;
+  title: string;
+  detail?: string;
+  description?: string;
+  tone?: "login" | "register" | "recover";
+  variant?: "login" | "register" | "recover";
+  className?: string;
+};
+
 const PANEL_COPY: Record<"login" | "register" | "recover", PanelCopy> = {
   login: {
-    eyebrow: "Learner portal",
-    headline: "Build the skills behind what comes next.",
+    eyebrow: "Learner access",
+    headline: "Continue into programmes, enrolments, and progress.",
     support:
-      "Sign in to continue coursework, track progress, and access your CAITECH learning workspace.",
-    footnote:
-      "Student, instructor, and administration workspaces use one secure CAITECH account.",
+      "Sign in with your CAITECH credentials to reach cart, orders, classwork, and your learner dashboard.",
+    footnote: "Secure session for enrolled learners and returning applicants.",
   },
   register: {
-    eyebrow: "Join CAITECH",
-    headline: "Start where practical skill meets real opportunity.",
+    eyebrow: "Create account",
+    headline: "Start with a learner profile built for technical training.",
     support:
-      "Create an account to explore programmes, enrol in courses, and begin building technical capability with purpose.",
-    footnote:
-      "Your account becomes the starting point for enrolments, orders, and learning progress.",
+      "Register once, then enrol in programmes, manage orders, and track progress from one account.",
+    footnote: "One account covers courses, payments, and institutional access.",
   },
   recover: {
     eyebrow: "Account recovery",
-    headline: "Regain access with a secure reset path.",
+    headline: "Reset access with a secure recovery path.",
     support:
       "Use the verified recovery flow to return to classwork, enrolments, and progress without friction.",
-    footnote: "Password reset keeps your learner profile and institutional access protected.",
+    footnote: "Password reset keeps your learner profile and institutional access intact.",
   },
 };
 
-const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/courses", label: "Courses" },
-  { href: "/contact", label: "Contact" },
-] as const;
-
 const FEATURED_METRICS = instituteMetrics.slice(0, 3);
 
-function resolveTone(tone?: AuthShellTone, variant?: AuthShellVariant): keyof typeof PANEL_COPY {
-  const raw = tone ?? variant ?? "login";
-  if (raw === "forgot" || raw === "reset" || raw === "recover") return "recover";
-  if (raw === "register") return "register";
-  return "login";
+function resolveTone(
+  tone?: AuthShellProps["tone"],
+  variant?: AuthShellProps["variant"],
+): "login" | "register" | "recover" {
+  return tone ?? variant ?? "login";
 }
 
+/**
+ * Auth page body only — header/footer come from PublicShell SiteHeader/SiteFooter
+ * so login/register match the rest of the site navigation.
+ */
 export function AuthShell({
+  children,
   title,
   detail,
   description,
-  children,
   tone,
-  variant = "login",
+  variant,
   className,
 }: AuthShellProps) {
   const panelKey = resolveTone(tone, variant);
@@ -82,32 +72,8 @@ export function AuthShell({
   const formDetail = detail ?? description;
 
   return (
-    <div className={cn("flex min-h-dvh flex-col bg-ground text-ink", className)}>
-      <header className="shrink-0 border-b border-line bg-ground/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <Logo compact />
-          <nav
-            className="flex min-w-0 items-center gap-0.5 sm:gap-1"
-            aria-label="Auth navigation"
-          >
-            {NAV_LINKS.map((link, index) => (
-              <span key={link.href} className="flex items-center gap-0.5 sm:gap-1">
-                {index > 0 ? (
-                  <span className="hidden h-3 w-px bg-line sm:block" aria-hidden />
-                ) : null}
-                <Link
-                  href={link.href}
-                  className="px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted transition-colors hover:text-petrol focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol sm:px-2.5"
-                >
-                  {link.label}
-                </Link>
-              </span>
-            ))}
-          </nav>
-        </div>
-      </header>
-
-      <main className="mx-auto grid min-h-[calc(100dvh-3.5rem)] w-full max-w-7xl shrink-0 grid-cols-1 lg:grid-cols-12">
+    <div className={cn("flex min-h-[calc(100dvh-var(--site-header-height,4.25rem))] flex-col bg-ground text-ink", className)}>
+      <div className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 lg:grid-cols-12">
         <aside className="relative hidden overflow-hidden bg-petrol text-ground lg:col-span-5 lg:flex lg:flex-col xl:col-span-5">
           <div
             className="pointer-events-none absolute inset-0 text-ground opacity-[0.055]"
@@ -210,9 +176,7 @@ export function AuthShell({
             <div className="mt-5">{children}</div>
           </div>
         </section>
-      </main>
-
-      <SiteFooter />
+      </div>
     </div>
   );
 }
@@ -229,7 +193,7 @@ export function AuthError({
     <div
       role="alert"
       className={cn(
-        "border border-danger/25 border-l-[3px] border-l-lime bg-danger/5 px-3.5 py-3 text-sm leading-snug text-danger",
+        "rounded-[var(--radius-md)] border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger",
         className,
       )}
     >

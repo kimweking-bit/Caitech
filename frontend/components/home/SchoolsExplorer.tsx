@@ -292,7 +292,7 @@ export function SchoolsExplorer() {
           </p>
 
           <Link
-            href={`/courses?school=${encodeURIComponent(active.id)}`}
+            href={`/courses?category=${encodeURIComponent(active.id)}`}
             className="schools-active__cta group inline-flex items-center gap-2"
           >
             <span>{copy.exploreCta}</span>

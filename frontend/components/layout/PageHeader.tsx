@@ -18,7 +18,7 @@ export function PageHeader({
       <Container>
         {eyebrow ? <Eyebrow className="mb-3">{eyebrow}</Eyebrow> : null}
         <div className="hairline-lime mb-5" aria-hidden />
-        <h1 className="font-display text-4xl text-petrol text-balance md:text-5xl">
+        <h1 className="font-display text-4xl text-balance text-petrol md:text-5xl">
           {title}
         </h1>
         {description ? (
@@ -26,7 +26,7 @@ export function PageHeader({
             {description}
           </p>
         ) : null}
-        {children}
+        {children ? <div className="mt-6">{children}</div> : null}
       </Container>
     </header>
   );

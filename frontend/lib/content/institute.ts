@@ -59,120 +59,95 @@ export type Discipline = {
   imageAlt: string;
 };
 
+/** Official Phase 3 catalogue taxonomy (matches API category slugs). */
 export const disciplines: readonly Discipline[] = [
   {
-    id: "cad",
+    id: "mep-building-services",
     number: "01",
-    name: "School of Computer Aided Designs and Technology",
-    shortName: "CAD + Design",
+    name: "MEP & Building Services",
+    shortName: "MEP",
     summary:
-      "Drafting, documentation and digital design workflows used across architecture, engineering and construction.",
-    tools: ["AutoCAD", "Revit", "Civil 3D", "BIM"],
-    image: "/images/home/discipline-cad-v2.jpg",
-    imageAlt:
-      "Architectural plans and drafting workspace for computer-aided design",
-  },
-  {
-    id: "eng-fundamentals",
-    number: "02",
-    name: "Engineering Fundamental Skills",
-    shortName: "Engineering fundamentals",
-    summary:
-      "Core engineering literacy for production environments — analysis habits, technical drawing and practical method.",
-    tools: ["Technical drawing", "Analysis", "Practical labs"],
-    image: "/images/home/discipline-engineering-v2.jpg",
-    imageAlt:
-      "Engineering lab technician working with technical equipment",
-  },
-  {
-    id: "electronics",
-    number: "03",
-    name: "General Electronics Repairs Course",
-    shortName: "Electronics repairs",
-    summary:
-      "Diagnosis, board-level practice and service workflows for electronics and mobile equipment.",
-    tools: ["Diagnostics", "Board repair", "Mobile service"],
-    image: "/images/home/discipline-electronics-v2.jpg",
-    imageAlt: "Close-up of electronic circuit board and component work",
-  },
-  {
-    id: "creative",
-    number: "04",
-    name: "School of Creative and Performing Art",
-    shortName: "Creative & performing arts",
-    summary:
-      "Creative practice supported by professional production tools and performance craft.",
-    tools: ["Production", "Performance", "Studio craft"],
-    image: "/images/home/discipline-creative-v2.jpg",
-    imageAlt: "Art studio with paints and creative materials",
-  },
-  {
-    id: "ict",
-    number: "05",
-    name: "School of Information and Communication Technology",
-    shortName: "ICT",
-    summary:
-      "Networks, systems, cybersecurity foundations and administration for working infrastructure.",
-    tools: ["Networking", "Linux", "Cybersecurity", "Systems"],
-    image: "/images/home/discipline-ict-v2.jpg",
-    imageAlt: "Server room racks and network cabling for ICT infrastructure",
-  },
-  {
-    id: "design-tech",
-    number: "06",
-    name: "School of Designs Technology",
-    shortName: "Design technology",
-    summary:
-      "Applied design tools for product, interior and built-environment work.",
-    tools: ["Interior design", "Visualization", "Design software"],
-    image: "/images/home/discipline-design-v2.jpg",
-    imageAlt:
-      "Modern interior design space with furniture and finishes",
-  },
-  {
-    id: "building",
-    number: "07",
-    name: "School of Building Technology",
-    shortName: "Building technology",
-    summary:
-      "Construction documentation, quantities and digital methods for building projects.",
-    tools: ["Construction docs", "QS", "Site practice"],
+      "Mechanical, electrical, and plumbing systems for modern commercial and industrial facilities.",
+    tools: ["HVAC", "Electrical design", "Plumbing coordination"],
     image: "/images/home/discipline-building-v2.jpg",
-    imageAlt: "Construction workers on a building site with hard hats",
+    imageAlt: "MEP and building services training",
   },
   {
-    id: "data",
-    number: "08",
-    name: "Data Analytic Courses",
-    shortName: "Data analytics",
+    id: "architecture-bim-digital-construction",
+    number: "02",
+    name: "Architecture, BIM & Digital Construction",
+    shortName: "Architecture & BIM",
     summary:
-      "SQL, Python and analysis habits for operational and decision-ready data work.",
-    tools: ["Python", "SQL", "Analytics"],
+      "Architectural technology, BIM workflows, and digital construction practice for studio and site teams.",
+    tools: ["BIM", "Revit", "Digital delivery"],
+    image: "/images/home/discipline-cad-v2.jpg",
+    imageAlt: "Architecture and BIM training",
+  },
+  {
+    id: "quantity-surveying-cost-management",
+    number: "03",
+    name: "Quantity Surveying & Cost Management",
+    shortName: "QS & Cost",
+    summary:
+      "Cost planning, BOQ production, and commercial management across the project lifecycle.",
+    tools: ["Measurement", "Estimation", "Cost control"],
+    image: "/images/home/discipline-engineering-v2.jpg",
+    imageAlt: "Quantity surveying and cost management",
+  },
+  {
+    id: "project-management-infrastructure",
+    number: "04",
+    name: "Project Management & Infrastructure",
+    shortName: "Project Management",
+    summary:
+      "Planning, controls, and leadership for infrastructure and built-environment projects.",
+    tools: ["Planning", "Controls", "Infrastructure delivery"],
+    image: "/images/home/nairobi.jpg",
+    imageAlt: "Project management and infrastructure",
+  },
+  {
+    id: "industrial-engineering-automation",
+    number: "05",
+    name: "Industrial Engineering & Automation",
+    shortName: "Industrial & Automation",
+    summary:
+      "Industrial methods, automation, and operational improvement for plants and production lines.",
+    tools: ["Automation", "Industrial methods", "Operations"],
+    image: "/images/home/discipline-electronics-v2.jpg",
+    imageAlt: "Industrial engineering and automation",
+  },
+  {
+    id: "renewable-energy-sustainability",
+    number: "06",
+    name: "Renewable Energy & Sustainability",
+    shortName: "Renewables",
+    summary:
+      "Renewable generation, energy efficiency, and sustainability practice for technical teams.",
+    tools: ["Solar", "Energy efficiency", "Sustainability"],
+    image: "/images/home/discipline-engineering-v2.jpg",
+    imageAlt: "Renewable energy and sustainability",
+  },
+  {
+    id: "engineering-finance-investment",
+    number: "07",
+    name: "Engineering Finance & Investment",
+    shortName: "Engineering Finance",
+    summary:
+      "Financial appraisal, investment analysis, and commercial decision-making for engineering ventures.",
+    tools: ["Project finance", "Investment analysis", "Appraisal"],
     image: "/images/home/discipline-data-v2.jpg",
-    imageAlt: "Analytics dashboards and charts on screens in a data workspace",
+    imageAlt: "Engineering finance and investment",
   },
   {
-    id: "engineering",
-    number: "09",
-    name: "School of Engineering",
-    shortName: "Engineering",
+    id: "corporate-strategy-leadership",
+    number: "08",
+    name: "Corporate Strategy & Leadership",
+    shortName: "Strategy & Leadership",
     summary:
-      "Applied engineering tracks spanning civil, structural and related industry software.",
-    tools: ["Civil", "Structural", "Project methods"],
-    image: "/images/home/discipline-engineering-applied-v2.jpg",
-    imageAlt:
-      "City infrastructure and structural engineering at scale",
-  },
-  {
-    id: "media",
-    number: "10",
-    name: "School of Media and Communication Technology",
-    shortName: "Media & communication tech",
-    summary:
-      "Production tools and technical media pipelines for modern communication work.",
-    tools: ["Media production", "Editing", "Communication tech"],
-    image: "/images/home/discipline-media-v2.jpg",
-    imageAlt: "Professional camera and media production equipment",
+      "Strategy, leadership, and organisational capability for technical and corporate teams.",
+    tools: ["Strategy", "Leadership", "Organisational growth"],
+    image: "/images/home/discipline-creative-v2.jpg",
+    imageAlt: "Corporate strategy and leadership",
   },
 ] as const;
 
@@ -187,122 +162,151 @@ export type FeaturedProgramme = {
   imageAlt: string;
 };
 
-/**
- * Editorial featured programmes from verified public CAITECH catalogue names.
- * No invented prices, durations, or instructors.
- * Swappable for Django course API once seeded (same shape via mapper).
- */
+/** Featured programmes used when API featured list is empty. */
 export const featuredProgrammes: readonly FeaturedProgramme[] = [
   {
-    slug: "diploma-computer-aided-designs",
+    slug: "revit-architecture",
     number: "01",
-    title: "Diploma in Computer Aided Designs (CAD)",
-    school: "CAD & Design Technology",
-    blurb: "Drafting and documentation workflows for architecture, engineering and construction studios.",
-    href: "/courses/diploma-computer-aided-designs",
-    image: "/images/home/programme-cad.jpg",
-    imageAlt: "CAD workstation with technical drawings on screen",
+    title: "Revit Architecture",
+    school: "Architecture & BIM",
+    blurb: "BIM modelling and documentation for architectural delivery teams.",
+    href: "/courses/revit-architecture",
+    image: "/images/home/discipline-cad-v2.jpg",
+    imageAlt: "Revit Architecture training",
   },
   {
-    slug: "diploma-civil-engineering",
+    slug: "autocad-2d-3d",
     number: "02",
-    title: "Diploma in Civil Engineering",
-    school: "Engineering",
-    blurb: "Civil engineering fundamentals for infrastructure, site practice and technical documentation.",
-    href: "/courses/diploma-civil-engineering",
-    image: "/images/home/programme-civil.jpg",
-    imageAlt: "Civil engineering and infrastructure context",
+    title: "AutoCAD 2D & 3D",
+    school: "Architecture & BIM",
+    blurb: "Professional drafting and modelling foundations for technical work.",
+    href: "/courses/autocad-2d-3d",
+    image: "/images/home/discipline-cad-v2.jpg",
+    imageAlt: "AutoCAD training",
   },
   {
-    slug: "diploma-data-science",
+    slug: "quantity-surveying",
     number: "03",
-    title: "Diploma Data Science",
-    school: "Data Analytics",
-    blurb: "Data skills for analysis, insight and technical decision support.",
-    href: "/courses/diploma-data-science",
-    image: "/images/home/programme-data.jpg",
-    imageAlt: "Data science work on multiple screens",
-  },
-  {
-    slug: "diploma-building-technology",
-    number: "04",
-    title: "Diploma in Building Technology",
-    school: "Building Technology",
-    blurb: "Building technology for construction documentation and practical project delivery.",
-    href: "/courses/diploma-building-technology",
-    image: "/images/home/programme-building.jpg",
-    imageAlt: "Building technology and construction environment",
-  },
-  {
-    slug: "diploma-information-technology",
-    number: "05",
-    title: "Diploma Information Technology",
-    school: "ICT",
-    blurb: "IT foundations spanning systems, networks and applied digital infrastructure.",
-    href: "/courses/diploma-information-technology",
-    image: "/images/home/programme-ict.jpg",
-    imageAlt: "Information technology lab environment",
-  },
-  {
-    slug: "diploma-architecture-technology",
-    number: "06",
-    title: "Diploma in Architecture Technology",
-    school: "Architecture Technology",
-    blurb: "Architectural technology for drawings, models and built-environment communication.",
-    href: "/courses/diploma-architecture-technology",
-    image: "/images/home/programme-architecture.jpg",
-    imageAlt: "Architecture drawings and modelling workstation",
+    title: "Quantity Surveying Essentials",
+    school: "QS & Cost",
+    blurb: "Measurement, BOQ, and cost control for commercial project teams.",
+    href: "/courses/quantity-surveying",
+    image: "/images/home/discipline-engineering-v2.jpg",
+    imageAlt: "Quantity surveying training",
   },
 ] as const;
 
-/** Short discipline tags only — no marketing copy. */
-export const toolsBehindWork = [
-  { name: "AutoCAD", label: "CAD / Drafting" },
-  { name: "Civil 3D", label: "Infrastructure" },
-  { name: "Revit", label: "BIM / Architecture" },
-  { name: "ArchiCAD", label: "BIM / Architecture" },
-  { name: "Lumion", label: "Visualization" },
-  { name: "Navisworks", label: "Coordination" },
-  { name: "BIM", label: "Digital construction" },
-  { name: "STAAD.Pro", label: "Structural" },
-  { name: "WaterCAD", label: "Hydraulic design" },
-  { name: "WaterGEMS", label: "Water networks" },
-  { name: "MicroStation", label: "CAD / Infrastructure" },
-  { name: "OpenRoads", label: "Civil design" },
-  { name: "Python", label: "Programming" },
-  { name: "SQL", label: "Data" },
-  { name: "Linux", label: "Systems" },
-  { name: "Wireshark", label: "Network analysis" },
-  { name: "Nmap", label: "Security" },
-  { name: "Cisco Packet Tracer", label: "Networking" },
-  { name: "Metasploit", label: "Security" },
-  { name: "Adobe tools", label: "Creative" },
-] as const;
+/**
+ * Stack — industry software taught / used.
+ * Four categories · twelve tools. Exact homepage Stack copy.
+ */
+export type ToolClusterId =
+  | "drafting"
+  | "bim"
+  | "civil"
+  | "viz-data";
 
+export type ToolItem = {
+  name: string;
+  /** Role / purpose line under the tool name. */
+  label: string;
+  cluster: ToolClusterId;
+};
+
+export type ToolClusterSurface = "dark" | "light";
+
+export type ToolCluster = {
+  id: ToolClusterId;
+  title: string;
+  blurb: string;
+  /** Optional courses catalogue category slug for card navigation. */
+  categoryId?: string;
+  surface: ToolClusterSurface;
+  image: { src: string; alt: string };
+};
+
+export const toolClusters: readonly ToolCluster[] = [
+  {
+    id: "drafting",
+    title: "Drafting & documentation",
+    blurb: "2D/3D CAD for production drawings.",
+    categoryId: "architecture-bim-digital-construction",
+    surface: "dark",
+    image: {
+      src: "/images/home/stack-drafting-plan.jpg",
+      alt: "Technical architectural floor-plan drawing",
+    },
+  },
+  {
+    id: "bim",
+    title: "BIM & architecture",
+    blurb: "Authoring, coord, early design.",
+    categoryId: "architecture-bim-digital-construction",
+    surface: "light",
+    image: {
+      src: "/images/home/stack-bim-model.jpg",
+      alt: "Multi-storey building form for BIM and architecture context",
+    },
+  },
+  {
+    id: "civil",
+    title: "Civil & infrastructure",
+    blurb: "Roads, sites, water networks.",
+    categoryId: "project-management-infrastructure",
+    surface: "light",
+    image: {
+      src: "/images/home/stack-civil-road.jpg",
+      alt: "Aerial highway interchange representing civil infrastructure work",
+    },
+  },
+  {
+    id: "viz-data",
+    title: "Visualization & computation",
+    blurb: "Presentation, script, data.",
+    surface: "dark",
+    image: {
+      src: "/images/home/stack-viz-render.jpg",
+      alt: "Architectural visualization of a modern residence at dusk",
+    },
+  },
+];
+
+export const toolsBehindWork: readonly ToolItem[] = [
+  { name: "AutoCAD", label: "CAD drafting", cluster: "drafting" },
+  { name: "MicroStation", label: "CAD / Infrastructure", cluster: "drafting" },
+  { name: "Revit", label: "BIM / Architecture", cluster: "bim" },
+  { name: "Archicad", label: "Architecture", cluster: "bim" },
+  { name: "SketchUp", label: "Conceptual design", cluster: "bim" },
+  { name: "Navisworks", label: "Coordination", cluster: "bim" },
+  { name: "Civil 3D", label: "Civil design", cluster: "civil" },
+  { name: "OpenRoads", label: "Civil design", cluster: "civil" },
+  { name: "WaterGEMS", label: "Water networks", cluster: "civil" },
+  { name: "Lumion", label: "Visualization", cluster: "viz-data" },
+  { name: "Python", label: "Programming", cluster: "viz-data" },
+  { name: "SQL", label: "Data", cluster: "viz-data" },
+];
+
+/** Outcomes path — verb → line → in-practice micro. Sequential, not peers. */
 export const outcomes = [
   {
-    verb: "Draw",
-    detail: "Technical drawings, CAD documentation, architectural plans",
+    verb: "Design",
+    line: "Drawings and models that hold up on site and in review.",
+    practice: "GA drawings · details · model views",
   },
   {
-    verb: "Model",
-    detail: "BIM, 3D modelling, digital construction",
+    verb: "Coordinate",
+    line: "Cross-discipline work on shared BIM and delivery standards.",
+    practice: "Federated models · clash notes · issue logs",
   },
   {
-    verb: "Analyse",
-    detail: "Engineering calculations, data, structural systems",
+    verb: "Deliver",
+    line: "Brief to package with tools used in Kenyan industry.",
+    practice: "IFC / DWG sets · submittals · site packs",
   },
   {
-    verb: "Configure",
-    detail: "Networks, ICT systems, technical infrastructure",
-  },
-  {
-    verb: "Repair",
-    detail: "Electronics, mobile devices, technical equipment",
-  },
-  {
-    verb: "Build",
-    detail: "Construction, project execution, practical technical work",
+    verb: "Lead",
+    line: "Own cost, schedule, and technical calls with confidence.",
+    practice: "Scope · programme · technical sign-off",
   },
 ] as const;
 
@@ -316,7 +320,6 @@ export type EditorialArticle = {
   featured?: boolean;
 };
 
-/** Real CAITECH blog topics — titles from existing public archive. */
 export const editorialArticles: readonly EditorialArticle[] = [
   {
     slug: "why-bim-is-transforming-construction-across-africa",
@@ -352,8 +355,8 @@ export const homeImages = {
     alt: "Engineer inspecting a multilayer PCB under warm lab lighting at CAITECH",
   },
   outcomes: {
-    src: "/images/home/outcomes.jpg",
-    alt: "Hands-on technical training in a workshop environment",
+    src: "/images/home/why-studio-competent-v3.jpg",
+    alt: "Engineer at a laptop reviewing technical work — hands-on digital practice at CAITECH",
   },
   nairobi: {
     src: "/images/home/nairobi.jpg",

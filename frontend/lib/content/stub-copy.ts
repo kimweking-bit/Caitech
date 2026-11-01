@@ -15,20 +15,11 @@ export const hero = {
   eyebrow: "CAITECH Global Institute",
   title: "Technical skill for work that ships.",
   lede:
-    "CAD, engineering, ICT, electronics, and construction technology — taught for work that actually gets done.",
+    "CAD, engineering, ICT, electronics, and construction technology — taught for work that actually gets done on site, in studio, and in industry teams.",
   primaryCta: { label: "Browse courses", href: "/courses" },
   secondaryCta: { label: "Explore AI Path", href: "/ai-path" },
   meta: ["Nairobi CBD", "Practice-led", "Technical training"],
   figureLabel: "Fig. 01 — Hands-on technical practice",
-} as const;
-
-export const positioning = {
-  eyebrow: "What we are",
-  title: "An institute built around practice.",
-  body: [
-    "CAITECH is a technical training institute focused on tools and workflows used in engineering, design technology, ICT, and related trades.",
-    "Programs are structured around software, standards, and project habits you will meet in studios, sites, and workshops — not abstract theory alone.",
-  ],
 } as const;
 
 export const schools = {
@@ -90,21 +81,61 @@ export const featured = {
   ctaHref: "/courses",
 } as const;
 
+/** About page — Who we are */
+export const positioning = {
+  eyebrow: "Who we are",
+  body: [
+    "CAITECH Global Institute is a Nairobi-based technical institute for CAD, engineering, ICT, electronics, construction technology, and applied digital skills.",
+    "Programmes are organised around the tools and workflows used on live projects — drafting sets, coordinated models, site packs, and production deliverables — not a separate certification framework.",
+  ],
+} as const;
+
 export const why = {
   eyebrow: "Why CAITECH",
   title: "Built for competent work.",
+  lede: "Not vague digital skills, theory-only diplomas, or imported curricula that ignore how work ships in Kenya.",
+  chips: ["Named tools", "Job-task modules", "Local payments"] as const,
   items: [
     {
-      title: "Tool-first instruction",
-      body: "AutoCAD, Civil 3D, ArchiCAD, BIM stacks, networking labs, Python, SQL — named tools, not vague “digital skills.”",
+      id: "tools",
+      title: "Named tools. Real files.",
+      body: "You learn the software the job file opens in — not a generic “digital skills” track.",
+      proof: {
+        kind: "tools" as const,
+        labels: [
+          "AutoCAD",
+          "Civil 3D",
+          "ArchiCAD",
+          "Revit",
+          "Python",
+          "SQL",
+        ],
+      },
     },
     {
-      title: "Career-shaped curricula",
-      body: "Modules map to job tasks: drawings, models, configurations, repairs, and data work employers recognize.",
+      id: "career",
+      title: "Taught to the deliverable.",
+      body: "Modules map to work product employers recognize — not chapter checklists.",
+      proof: {
+        kind: "deliverables" as const,
+        labels: [
+          "Drawings",
+          "Models",
+          "Configs",
+          "Repairs",
+          "Datasets",
+        ],
+      },
     },
     {
-      title: "Kenya-ready operations",
-      body: "Pricing and payments designed for local reality, including M-Pesa-oriented checkout.",
+      id: "kenya",
+      title: "Built around how Kenya pays.",
+      body: "Pricing and checkout match local reality, including M-Pesa-oriented payment.",
+      proof: {
+        kind: "payments" as const,
+        primary: "M-Pesa",
+        secondary: "Local pricing · KES",
+      },
     },
   ],
 } as const;

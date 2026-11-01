@@ -6,9 +6,23 @@ from django.core.validators import MinValueValidator
 class Category(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True, default='')
+    display_order = models.PositiveIntegerField(default=100)
+    source_id = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text='Stable id from the official catalogue manifest.',
+    )
+    is_official = models.BooleanField(
+        default=False,
+        help_text='True for categories from the official CAITECH catalogue taxonomy.',
+    )
 
     class Meta:
         verbose_name_plural = "Categories"
+        ordering = ['display_order', 'name', 'pk']
 
     def __str__(self):
         return self.name
@@ -43,6 +57,23 @@ class Course(models.Model):
     slug = models.SlugField(unique=True)
     short_description = models.CharField(max_length=280, blank=True)
     description = models.TextField()
+    target_audience = models.TextField(
+        blank=True,
+        default='',
+        help_text='Official target audience / best-for text from the corporate catalogue.',
+    )
+    source_id = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        unique=True,
+        db_index=True,
+        help_text='Stable official catalogue identifier (e.g. mep-01). Null for non-official rows.',
+    )
+    is_official = models.BooleanField(
+        default=False,
+        help_text='True when this course is owned by the official catalogue sync.',
+    )
     learning_outcomes = models.JSONField(default=list, blank=True)
     image = models.ImageField(upload_to='course_thumbnails/%Y/%m/', blank=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='courses')

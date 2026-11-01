@@ -341,7 +341,7 @@ class AdminEnrollmentOperationsTests(APITestCase):
 			Enrollment.objects.filter(student=self.student, course=self.first_course).exists()
 		)
 		self.assertEqual(len(mail.outbox), 1)
-		self.assertIn('Enrollment confirmed', mail.outbox[0].subject)
+		self.assertIn('enrollment is confirmed', mail.outbox[0].subject.lower())
 
 	def test_manual_enrollment_rejects_duplicates(self):
 		self.client.force_authenticate(self.admin)

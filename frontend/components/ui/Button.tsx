@@ -5,14 +5,18 @@ import { cn } from "@/lib/utils/cn";
 type Variant = "primary" | "secondary" | "ghost" | "lime";
 type Size = "sm" | "md" | "lg";
 
+/**
+ * Phase 1: primary uses brand blue (btn-primary-premium + blue utilities).
+ * `lime` retained as gold-family accent for existing callers.
+ */
 const variantClass: Record<Variant, string> = {
   primary:
-    "btn-primary-premium bg-lime text-lime-ink border border-lime font-semibold focus-visible:outline-cyan",
+    "btn-primary-premium bg-blue text-white border border-blue font-semibold focus-visible:outline-blue",
   secondary:
-    "bg-surface text-petrol border border-line shadow-[var(--shadow-sm)] hover:border-cyan/40 hover:shadow-[var(--shadow-md)]",
+    "bg-surface text-petrol border border-line shadow-[var(--shadow-sm)] hover:border-blue/40 hover:shadow-[var(--shadow-md)]",
   ghost:
     "bg-transparent text-petrol border border-transparent hover:bg-petrol/5",
-  lime: "btn-primary-premium bg-lime text-lime-ink border border-lime hover:bg-lime-bright font-semibold focus-visible:outline-cyan",
+  lime: "bg-lime text-lime-ink border border-lime hover:bg-lime-bright font-semibold focus-visible:outline-blue",
 };
 
 const sizeClass: Record<Size, string> = {
@@ -51,7 +55,7 @@ export function Button(props: ButtonProps) {
   const classes = cn(
     "inline-flex items-center justify-center font-semibold tracking-wide transition-[color,background-color,border-color,box-shadow,filter,transform] duration-160",
     "rounded-[var(--radius-md)] disabled:opacity-50 disabled:pointer-events-none",
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-cyan)]",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]",
     variantClass[variant],
     sizeClass[size],
     className,

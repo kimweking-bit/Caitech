@@ -17,6 +17,7 @@ function qs(params?: CourseListParams): string {
   if (!params) return "";
   const sp = new URLSearchParams();
   if (params.page && params.page > 1) sp.set("page", String(params.page));
+  if (params.page_size) sp.set("page_size", String(params.page_size));
   if (params.search?.trim()) sp.set("search", params.search.trim());
   if (params.category && params.category !== "all") {
     sp.set("category", params.category);
@@ -53,7 +54,7 @@ export async function getCourseBySlug(
 export async function getCategories(): Promise<Category[]> {
   try {
     const data = await apiFetch<Category[] | PaginatedResponse<Category>>(
-      "/categories/",
+      "/courses/categories/",
       { next: { revalidate: 300, tags: ["categories"] } },
     );
     if (Array.isArray(data)) return data;
@@ -96,13 +97,17 @@ export function toCourseCard(c: CourseListItem): CourseCardModel {
     title: displayTitle(c.title),
     description: blurb,
     imageUrl: resolveCourseImage({
+      sourceId: (c as { source_id?: string | null }).source_id,
       slug: c.slug,
       title: c.title,
+      categorySlug: c.category_slug,
       categoryName: c.category_name,
-      apiImageUrl: mediaUrl(c.image),
+      apiImageUrl: mediaUrl(c.image) || null,
     }),
     categoryLabel: displayCategory(c.category_name) || null,
+    categorySlug: c.category_slug || null,
     level: c.level || null,
+    levelLabel: c.level || null,
     durationLabel: durationLabel(c),
     priceLabel: c.is_free ? "Free" : formatMoney(c.price, currency),
     originalPriceLabel:
@@ -110,9 +115,13 @@ export function toCourseCard(c: CourseListItem): CourseCardModel {
         ? formatMoney(c.original_price, currency)
         : null,
     isFree: Boolean(c.is_free),
-    isAvailable: Boolean(c.is_available),
+    is_official: Boolean((c as { is_official?: boolean }).is_official),
+    source_id: (c as { source_id?: string | null }).source_id ?? null,
+    isAvailable: c.is_available !== false,
     rating:
-      c.review_count > 0 && c.average_rating != null ? c.average_rating : null,
+      (c.review_count ?? 0) > 0 && c.average_rating != null
+        ? c.average_rating
+        : null,
     reviewCount: c.review_count ?? 0,
   };
 }

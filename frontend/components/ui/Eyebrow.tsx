@@ -13,7 +13,7 @@ export function Eyebrow({
   return (
     <Tag
       className={cn(
-        "font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted",
+        "font-mono text-[11px] uppercase tracking-[0.14em] text-blue",
         className,
       )}
     >

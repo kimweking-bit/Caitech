@@ -1,7 +1,7 @@
 # CAITECH — client handoff (waiting on client)
 
 The platform is built, demo-ready, and production-integration ready.
-Only external credentials and official CAITECH content remain.
+Only external credentials and some official curriculum media remain.
 
 ## DONE (local / demo)
 
@@ -14,6 +14,11 @@ Only external credentials and official CAITECH content remain.
 - WhatsApp staff notify stub (Meta Cloud API, env-gated)
 - AI Learning Path (published courses only; needs provider key for live AI)
 - Demo seed dataset (do not clear unless intentional)
+- **Official catalogue inventory + additive sync** (Phase 3)
+  - Manifest: `backend/courses/data/official_catalogue_manifest.json`
+  - Inventory doc: `docs/phase3/OFFICIAL_COURSE_INVENTORY.md`
+  - Command: `python manage.py sync_official_catalogue` (use `--dry-run` first)
+  - Stable `source_id` / `is_official` on courses; official taxonomy categories with `display_order`
 
 ## WAITING FOR CLIENT — credentials
 
@@ -51,18 +56,34 @@ Copy `backend/.env.example` → `backend/.env` and fill:
 ### AI Learning Path
 - `AI_PROVIDER`, `AI_API_KEY`, `AI_API_BASE_URL` (and any model id vars in `.env.example`)
 
-## WAITING FOR CLIENT — official content
+## WAITING FOR CLIENT — remaining content
 
-Load via Django admin / import (no frontend rewrite required):
-
-- Official programmes, fees, duration, intakes, categories
-- Curriculum modules / lessons / media / videos
+- Curriculum modules / lessons / media / videos for official programmes
 - Quizzes and assignments
-- Instructor profiles
+- Instructor profiles (photos / bios beyond catalogue names)
 - Blog posts, contact details, branding assets
 - Real testimonials only when available
+- Confirmed fees / seat capacity / published flags for live sale (sync creates **unpublished** shells by default)
+
+### Official catalogue sync (ops)
+
+```bash
+cd backend
+python manage.py migrate
+python manage.py sync_official_catalogue --dry-run
+python manage.py sync_official_catalogue
+# optional: publish selected courses after QA
+# python manage.py sync_official_catalogue --publish
+```
+
+Regenerate manifest from source inventory if catalogue text changes:
+
+```bash
+python tools/generate_official_manifest.py
+```
 
 ## Demo data
 
 Keep `seed_demo` for demos and QA. Do **not** run `clear_demo` unless intentionally wiping demo.
-Real CAITECH content should use non-`demo-` slugs.
+Real CAITECH content uses non-`demo-` slugs and stable `source_id` values (e.g. `mep-01`).
+Demo and official rows can coexist until demo is deliberately cleared.

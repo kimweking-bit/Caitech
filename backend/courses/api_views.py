@@ -66,14 +66,21 @@ class CourseApiPagination(PageNumberPagination):
 
 
 class CategoryListCreateV1(generics.ListCreateAPIView):
-    queryset = Category.objects.order_by('name', 'pk')
+    """Public catalogue taxonomy. Prefer official categories when any exist."""
     serializer_class = VersionedCategorySerializer
     permission_classes = [IsAdminOrReadOnly]
     pagination_class = CourseApiPagination
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', 'slug']
-    ordering_fields = ['name', 'slug']
-    ordering = ['name', 'pk']
+    search_fields = ['name', 'slug', 'description']
+    ordering_fields = ['display_order', 'name', 'slug']
+    ordering = ['display_order', 'name', 'pk']
+
+    def get_queryset(self):
+        qs = Category.objects.order_by('display_order', 'name', 'pk')
+        user = self.request.user
+        if (not getattr(user, 'is_staff', False)) and qs.filter(is_official=True).exists():
+            qs = qs.filter(is_official=True)
+        return qs
 
 
 class CategoryDetailV1(generics.RetrieveUpdateDestroyAPIView):
@@ -88,8 +95,8 @@ class CourseCatalogV1(generics.ListCreateAPIView):
     permission_classes = [IsCourseOwnerOrStaffOrReadOnly]
     pagination_class = CourseApiPagination
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['title', 'description', 'category__name', 'instructor__username']
-    ordering_fields = ['title', 'price', 'created_at']
+    search_fields = ['title', 'description', 'short_description', 'target_audience', 'category__name', 'instructor__username', 'source_id']
+    ordering_fields = ['title', 'price', 'created_at', 'is_official']
     ordering = ['-created_at', '-pk']
 
     def get_queryset(self):
@@ -436,7 +443,8 @@ class ManualEnrollmentCreateV1(generics.CreateAPIView):
                 if course.enrollments.count() + reservations >= course.seat_capacity:
                     raise ValidationError({'detail': 'This course has no seats available.'})
             enrollment = serializer.save(enrolled_by=request.user, course=course)
-        frontend = getattr(settings, 'FRONTEND_URL', None) or 'http://localhost:3000'
+        from django.conf import settings as _settings
+        frontend = getattr(_settings, 'FRONTEND_URL', None) or 'http://localhost:3000'
         dashboard_url = f'{str(frontend).rstrip("/")}/dashboard/'
         student_name = student.get_full_name() or student.username
         send_notification_email(

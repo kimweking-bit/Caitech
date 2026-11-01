@@ -15,15 +15,19 @@ export function Container({
   children,
   width = "xl",
   className,
+  id,
   as: Tag = "div",
 }: {
   children: ReactNode;
   width?: Width;
   className?: string;
+  /** Anchor target for in-page links (e.g. #catalogue, #journal). */
+  id?: string;
   as?: ElementType;
 }) {
   return (
     <Tag
+      id={id}
       className={cn(
         "mx-auto w-full px-5 sm:px-6 lg:px-8",
         widthClass[width],

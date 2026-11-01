@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const desc =
       (course.short_description || course.description || "").slice(0, 160) ||
       undefined;
-    const img = resolveCourseImage({ slug: course.slug, title: course.title, categoryName: course.category_name, apiImageUrl: mediaUrl(course.image) });
+    const img = resolveCourseImage({ sourceId: course.source_id, slug: course.slug, title: course.title, categorySlug: course.category_slug, categoryName: course.category_name, apiImageUrl: mediaUrl(course.image) });
     return {
       title: course.title,
       description: desc,
@@ -74,7 +74,7 @@ export default async function CourseDetailPage({ params }: Props) {
 
   if (!course) notFound();
 
-  const image = resolveCourseImage({ slug: course.slug, title: course.title, categoryName: course.category_name, apiImageUrl: mediaUrl(course.image) });
+  const image = resolveCourseImage({ sourceId: course.source_id, slug: course.slug, title: course.title, categorySlug: course.category_slug, categoryName: course.category_name, apiImageUrl: mediaUrl(course.image) });
   const currency = course.currency || "KES";
   const priceLabel = course.is_free
     ? "Free"

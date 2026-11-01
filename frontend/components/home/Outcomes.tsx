@@ -1,50 +1,58 @@
-import Image from "next/image";
-import { homeImages, outcomes } from "@/lib/content/institute";
+import { outcomes } from "@/lib/content/institute";
 import { Section } from "@/components/ui/Section";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
+/**
+ * What you walk away with — four competence outcomes in a 2×2 editorial grid.
+ * Theme white band; one shared design (brand-blue accent on every card).
+ * Progression: Design → Coordinate → Deliver → Lead.
+ */
 export function Outcomes() {
   return (
     <Section
-      eyebrow="Capability"
-      title="What you leave able to do"
-      lede="You don’t just sit through lessons. You leave able to do the work."
-      tone="surface"
+      tone="ground"
+      className="outcomes-section"
       id="outcomes"
+      aria-labelledby="outcomes-heading"
     >
-      <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
-        <div className="relative aspect-[4/5] overflow-hidden border border-line bg-petrol/5 sm:aspect-[5/4] lg:col-span-5 lg:aspect-auto lg:min-h-[28rem]">
-          <Image
-            src={homeImages.outcomes.src}
-            alt={homeImages.outcomes.alt}
-            fill
-            sizes="(max-width: 1024px) 100vw, 40vw"
-            className="object-cover"
-          />
-          <div
-            aria-hidden
-            className="absolute inset-0 bg-gradient-to-t from-petrol/40 to-transparent"
-          />
+      <header className="outcomes-header">
+        <div className="outcomes-header__meta">
+          <span className="outcomes-header__marker" aria-hidden="true" />
+          <Eyebrow>What you walk away with</Eyebrow>
         </div>
+        <div className="outcomes-header__copy">
+          <h2 id="outcomes-heading" className="outcomes-header__title">
+            Competence you can take into live project work
+          </h2>
+          <p className="outcomes-header__lede">
+            Four outcomes that map to how technical work actually runs —
+            design, coordinate, deliver, and lead with confidence.
+          </p>
+        </div>
+      </header>
 
-        <ul className="grid gap-0 border border-line bg-ground sm:grid-cols-2 lg:col-span-7">
-          {outcomes.map((item) => (
-            <li
-              key={item.verb}
-              className="border-b border-line p-5 last:border-b-0 sm:border-r sm:odd:border-r sm:[&:nth-last-child(-n+2)]:border-b-0 md:p-6"
-            >
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Outcome
-              </p>
-              <h3 className="mt-2 font-display text-2xl uppercase tracking-wide text-petrol md:text-3xl">
-                {item.verb}
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-                {item.detail}
+      <ol className="outcomes-grid" aria-label="Learning outcomes">
+        {outcomes.map((item, index) => {
+          const n = String(index + 1).padStart(2, "0");
+          return (
+            <li key={item.verb} className="outcomes-card">
+              <div className="outcomes-card__head">
+                <span className="outcomes-card__num" aria-hidden="true">
+                  {n}
+                </span>
+                <h3 className="outcomes-card__verb">{item.verb}</h3>
+              </div>
+              <p className="outcomes-card__line">{item.line}</p>
+              <p className="outcomes-card__practice">
+                <span className="outcomes-card__practice-label">In practice</span>
+                <span className="outcomes-card__practice-items">
+                  {item.practice}
+                </span>
               </p>
             </li>
-          ))}
-        </ul>
-      </div>
+          );
+        })}
+      </ol>
     </Section>
   );
 }

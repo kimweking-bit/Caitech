@@ -182,7 +182,7 @@ export default function ServicesPage() {
                       {o.verb}
                     </p>
                     <p className="mt-1.5 text-sm leading-relaxed text-ink/75">
-                      {o.detail}
+                      {o.line}
                     </p>
                   </li>
                 ))}

@@ -40,7 +40,14 @@ class SectionSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(SectionLessonOutlineSerializer(many=True))
     def get_lessons(self, section):
+        from .permissions import user_can_access_course
+
         qs = section.lessons.all().order_by('order')
+        request = self.context.get('request')
+        user = getattr(request, 'user', None) if request is not None else None
+        course = section.course
+        if not user_can_access_course(user, course):
+            qs = qs.filter(is_preview=True)
         return SectionLessonOutlineSerializer(qs, many=True, context=self.context).data
 
     def validate_order(self, value):
@@ -53,10 +60,29 @@ class SectionSerializer(serializers.ModelSerializer):
         return value
 
 
+class VersionedLessonSerializer(serializers.ModelSerializer):
+    """Full lesson payload for detail endpoints (gated media included when authorized)."""
+
+    class Meta:
+        model = Lesson
+        fields = [
+            'id',
+            'course',
+            'section',
+            'title',
+            'video_url',
+            'order',
+            'duration_minutes',
+            'is_preview',
+        ]
+        read_only_fields = ['course']
+
+
 class VersionedCourseSerializer(serializers.ModelSerializer):
     sections = SectionSerializer(many=True, read_only=True)
     lessons = serializers.SerializerMethodField()
     category_name = serializers.CharField(source='category.name', read_only=True)
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
     instructor_username = serializers.CharField(source='instructor.username', read_only=True)
     average_rating = serializers.FloatField(read_only=True, allow_null=True, default=None)
     review_count = serializers.IntegerField(read_only=True, default=0)
@@ -85,8 +111,9 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
-            'id', 'title', 'slug', 'short_description', 'description', 'learning_outcomes', 'image',
-            'category', 'category_name',
+            'id', 'title', 'slug', 'short_description', 'description', 'target_audience',
+            'learning_outcomes', 'image',
+            'category', 'category_name', 'category_slug',
             'instructor', 'instructor_username', 'price', 'original_price',
             'currency', 'seat_capacity', 'level', 'is_published', 'is_free', 'created_at',
             'sections', 'lessons', 'average_rating', 'review_count',
@@ -94,112 +121,62 @@ class VersionedCourseSerializer(serializers.ModelSerializer):
             'is_available',
             'course_type', 'duration', 'delivery_modes', 'intake_status',
             'whatsapp_inquiry_url',
+            'source_id', 'is_official',
         ]
         read_only_fields = [
             'instructor', 'average_rating', 'review_count', 'enrolled_count',
             'percent_booked', 'total_duration_hours',
             'is_available',
+            'source_id', 'is_official',
         ]
 
-    @extend_schema_field(serializers.FloatField(allow_null=True))
     def get_percent_booked(self, course):
-        if not course.seat_capacity:
-            return None
         enrolled_count = getattr(course, 'enrolled_count', None)
         if enrolled_count is None:
             enrolled_count = course.enrollments.count()
-        return min(100, round(enrolled_count * 100 / course.seat_capacity, 2))
+        capacity = course.seat_capacity
+        if not capacity:
+            return None
+        return round(min(100.0, (enrolled_count / capacity) * 100.0), 1)
 
-    @extend_schema_field(serializers.FloatField())
     def get_total_duration_hours(self, course):
         total_minutes = getattr(course, 'total_duration_minutes', None)
         if total_minutes is None:
-            total_minutes = course.lessons.aggregate(total=Sum('duration_minutes'))['total']
-        return round((total_minutes or 0) / 60, 2)
+            total_minutes = (
+                Lesson.objects.filter(course=course).aggregate(total=Sum('duration_minutes'))['total'] or 0
+            )
+        return round((total_minutes or 0) / 60.0, 1)
 
-    @extend_schema_field(serializers.BooleanField())
     def get_is_available(self, course):
         return course.is_available
 
     @extend_schema_field(LessonSerializer(many=True))
     def get_lessons(self, course):
+        # Flat list kept for older clients; prefer sections for curriculum.
+        # Public/unentitled users only see preview lessons (no gated media list).
+        from .permissions import user_can_access_course
+
+        qs = course.lessons.all().order_by('section__order', 'order', 'pk')
         request = self.context.get('request')
-        user = request.user if request else None
-        has_full_access = bool(
-            user
-            and user.is_authenticated
-            and (
-                user.is_staff
-                or course.instructor_id == user.pk
-                or course.enrollments.filter(student_id=user.pk).exists()
-            )
-        )
-        lessons = course.lessons.all()
-        if not has_full_access:
-            lessons = lessons.filter(is_preview=True)
-        return LessonSerializer(lessons, many=True, context=self.context).data
+        user = getattr(request, 'user', None) if request is not None else None
+        if not user_can_access_course(user, course):
+            qs = qs.filter(is_preview=True)
+        return LessonSerializer(qs, many=True, context=self.context).data
 
 
-class VersionedLessonSerializer(serializers.ModelSerializer):
-    section = serializers.PrimaryKeyRelatedField(read_only=True)
+class CourseSerializer(VersionedCourseSerializer):
+    """Legacy alias used by non-versioned endpoints and nested category payloads."""
 
-    class Meta:
-        model = Lesson
-        fields = ['id', 'title', 'video_url', 'is_preview', 'order', 'section', 'duration_minutes']
-
-
-class CourseResourceSerializer(serializers.ModelSerializer):
-    file = serializers.FileField(write_only=True)
-    download_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = CourseResource
-        fields = ['id', 'title', 'order', 'file', 'download_url', 'created_at']
-        read_only_fields = ['id', 'download_url', 'created_at']
-
-    @extend_schema_field(serializers.URLField())
-    def get_download_url(self, resource):
-        return reverse(
-            'api-v1-resource-download',
-            kwargs={'pk': resource.pk},
-            request=self.context.get('request'),
-        )
-
-
-class CourseSerializer(serializers.ModelSerializer):
-    lessons = serializers.SerializerMethodField()
-    category_name = serializers.CharField(source='category.name', read_only=True)
     instructor_username = serializers.CharField(source='instructor.username', read_only=True)
-    image = serializers.ImageField(required=False, allow_empty_file=False)
 
-    @extend_schema_field(LessonSerializer(many=True))
-    def get_lessons(self, course):
-        request = self.context.get('request')
-        user = request.user if request else None
-        has_full_access = bool(
-            user
-            and user.is_authenticated
-            and (
-                user.is_staff
-                or course.instructor_id == user.pk
-                or course.enrollments.filter(student_id=user.pk).exists()
-            )
-        )
-        lessons = course.lessons.all()
-        if not has_full_access:
-            lessons = lessons.filter(is_preview=True)
-        return LessonSerializer(lessons, many=True, context=self.context).data
-
-    class Meta:
-        model = Course
+    class Meta(VersionedCourseSerializer.Meta):
         fields = [
-            'id', 'title', 'slug', 'short_description', 'description', 'learning_outcomes', 'image',
-            'category', 'category_name',
-            'instructor', 'instructor_username',
-            'price', 'original_price', 'currency', 'seat_capacity', 'level',
-            'is_published', 'is_free', 'created_at', 'lessons'
+            'id', 'title', 'slug', 'short_description', 'description', 'target_audience',
+            'learning_outcomes', 'image', 'category', 'instructor', 'instructor_username',
+            'price', 'is_published', 'is_free', 'created_at', 'lessons',
+            'source_id', 'is_official',
         ]
-        read_only_fields = ['instructor']
+        read_only_fields = ['instructor', 'instructor_username', 'source_id', 'is_official']
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -207,30 +184,61 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'courses']
+        fields = [
+            'id', 'name', 'slug', 'description',
+            'display_order', 'is_official', 'courses',
+        ]
+        read_only_fields = ['is_official']
 
 
 class VersionedCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug']
+        fields = [
+            'id', 'name', 'slug', 'description',
+            'display_order', 'is_official',
+        ]
+        read_only_fields = ['is_official']
+
+
+class CourseReviewSerializer(serializers.ModelSerializer):
+    student_username = serializers.CharField(source='student.username', read_only=True)
+
+    class Meta:
+        model = CourseReview
+        fields = [
+            'id',
+            'course',
+            'student',
+            'student_username',
+            'rating',
+            'comment',
+            'created_at',
+        ]
+        read_only_fields = ['student', 'course', 'student_username', 'created_at']
 
 
 class LessonProgressSerializer(serializers.ModelSerializer):
     lesson_title = serializers.CharField(source='lesson.title', read_only=True)
     lesson_order = serializers.IntegerField(source='lesson.order', read_only=True)
+    completed_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = LessonProgress
         fields = [
-            'id', 'lesson', 'lesson_title', 'lesson_order', 'completed',
-            'completed_at', 'updated_at',
+            'id',
+            'lesson',
+            'lesson_title',
+            'lesson_order',
+            'completed',
+            'completed_at',
+            'updated_at',
         ]
         read_only_fields = ['id', 'lesson_title', 'lesson_order', 'completed_at', 'updated_at']
 
     def validate_lesson(self, lesson):
-        enrollment = self.context['enrollment']
-        if lesson.course_id != enrollment.course_id:
+        enrollment = self.context.get('enrollment')
+        if enrollment is not None and lesson.course_id != enrollment.course_id:
             raise serializers.ValidationError('Lesson must belong to the enrolled course.')
         return lesson
 
@@ -245,80 +253,89 @@ class EnrollmentProgressResponseSerializer(serializers.Serializer):
 
 
 class DashboardEnrollmentSerializer(serializers.ModelSerializer):
-    course_id = serializers.IntegerField(source='course.id', read_only=True)
+    course_id = serializers.IntegerField(read_only=True)
     course_title = serializers.CharField(source='course.title', read_only=True)
-    course_slug = serializers.SlugField(source='course.slug', read_only=True)
-    completed_lessons = serializers.SerializerMethodField()
-    total_lessons = serializers.SerializerMethodField()
+    course_slug = serializers.CharField(source='course.slug', read_only=True)
+    total_lessons = serializers.IntegerField(read_only=True)
+    completed_lessons = serializers.IntegerField(read_only=True)
     progress_percentage = serializers.SerializerMethodField()
-    instructor_username = serializers.CharField(source='course.instructor.username', read_only=True)
-    course_duration = serializers.CharField(source='course.duration', read_only=True)
-    course_image = serializers.ImageField(source='course.image', read_only=True)
 
     class Meta:
         model = Enrollment
         fields = [
-            'id', 'course_id', 'course_title', 'course_slug', 'enrolled_at',
-            'completed', 'completed_lessons', 'total_lessons', 'progress_percentage',
-            'instructor_username', 'course_duration', 'course_image',
+            'id',
+            'course_id',
+            'course_title',
+            'course_slug',
+            'enrolled_at',
+            'completed',
+            'total_lessons',
+            'completed_lessons',
+            'progress_percentage',
         ]
 
-    @extend_schema_field(serializers.IntegerField())
-    def get_total_lessons(self, enrollment):
-        return enrollment.course.lessons.count()
-
-    @extend_schema_field(serializers.IntegerField())
-    def get_completed_lessons(self, enrollment):
-        return enrollment.lesson_progress.filter(completed=True).count()
-
-    @extend_schema_field(serializers.FloatField())
     def get_progress_percentage(self, enrollment):
-        total = self.get_total_lessons(enrollment)
-        if total == 0:
+        total = getattr(enrollment, 'total_lessons', None)
+        completed = getattr(enrollment, 'completed_lessons', None)
+        if total is None:
+            total = enrollment.course.lessons.count()
+        if completed is None:
+            completed = enrollment.lesson_progress.filter(completed=True).count()
+        if not total:
             return 0
-        completed = self.get_completed_lessons(enrollment)
         return round(completed * 100 / total, 2)
-
-
-class DashboardPaginationSerializer(serializers.Serializer):
-    count = serializers.IntegerField()
-    next = serializers.URLField(allow_null=True)
-    previous = serializers.URLField(allow_null=True)
 
 
 class StudentDashboardResponseSerializer(serializers.Serializer):
     my_courses = DashboardEnrollmentSerializer(many=True)
-    certificates = serializers.ListField(child=serializers.DictField())
-    pagination = DashboardPaginationSerializer()
+    certificates = serializers.ListField(child=serializers.DictField(), required=False)
+    pagination = serializers.DictField()
+
+
+class CourseResourceSerializer(serializers.ModelSerializer):
+    download_url = serializers.SerializerMethodField()
+    # Accept upload on write; never echo the raw storage path in responses.
+    file = serializers.FileField(write_only=True, required=False)
+
+    class Meta:
+        model = CourseResource
+        fields = [
+            'id',
+            'lesson',
+            'title',
+            'file',
+            'order',
+            'created_at',
+            'download_url',
+        ]
+        read_only_fields = ['id', 'lesson', 'created_at', 'download_url']
+        extra_kwargs = {
+            'lesson': {'required': False},
+        }
+
+    def get_download_url(self, obj):
+        request = self.context.get('request')
+        url = reverse('api-v1-resource-download', kwargs={'pk': obj.pk})
+        if request is not None:
+            return request.build_absolute_uri(url)
+        return url
 
 
 class ResourceErrorSerializer(serializers.Serializer):
     detail = serializers.CharField()
 
 
-class CourseReviewSerializer(serializers.ModelSerializer):
-    student_username = serializers.CharField(source='student.username', read_only=True)
-
-    class Meta:
-        model = CourseReview
-        fields = ['id', 'student_username', 'rating', 'comment', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'student_username', 'created_at', 'updated_at']
-
-    def validate_rating(self, value):
-        if not 1 <= value <= 5:
-            raise serializers.ValidationError('Rating must be between 1 and 5.')
-        return value
-
-
 class ManualEnrollmentSerializer(serializers.ModelSerializer):
-    student = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all())
-    enrolled_by = serializers.PrimaryKeyRelatedField(read_only=True)
-
     class Meta:
         model = Enrollment
         fields = [
-            'id', 'student', 'course', 'enrolled_by', 'note', 'enrolled_at', 'completed'
+            'id',
+            'student',
+            'course',
+            'note',
+            'enrolled_by',
+            'enrolled_at',
+            'completed',
         ]
         read_only_fields = ['id', 'enrolled_by', 'enrolled_at', 'completed']
 
@@ -327,15 +344,37 @@ class AdminEnrollmentSerializer(serializers.ModelSerializer):
     student_username = serializers.CharField(source='student.username', read_only=True)
     course_title = serializers.CharField(source='course.title', read_only=True)
     course_slug = serializers.CharField(source='course.slug', read_only=True)
-    enrolled_by_username = serializers.CharField(source='enrolled_by.username', read_only=True, allow_null=True)
+    enrolled_by_username = serializers.CharField(
+        source='enrolled_by.username',
+        read_only=True,
+        allow_null=True,
+    )
 
     class Meta:
         model = Enrollment
         fields = [
-            'id', 'student', 'student_username', 'course', 'course_title', 'course_slug',
-            'enrolled_by', 'enrolled_by_username', 'note', 'enrolled_at', 'completed'
+            'id',
+            'student',
+            'student_username',
+            'course',
+            'course_title',
+            'course_slug',
+            'enrolled_by',
+            'enrolled_by_username',
+            'note',
+            'enrolled_at',
+            'completed',
         ]
-        read_only_fields = ['id', 'enrolled_at', 'completed']
+        read_only_fields = [
+            'id',
+            'student_username',
+            'course_title',
+            'course_slug',
+            'enrolled_by',
+            'enrolled_by_username',
+            'enrolled_at',
+            'completed',
+        ]
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
@@ -344,5 +383,13 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Enrollment
-        fields = ['id', 'student', 'student_username', 'course', 'course_title', 'enrolled_at', 'completed']
+        fields = [
+            'id',
+            'student',
+            'student_username',
+            'course',
+            'course_title',
+            'enrolled_at',
+            'completed',
+        ]
         read_only_fields = ['student', 'enrolled_at', 'completed']

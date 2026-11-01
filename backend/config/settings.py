@@ -156,13 +156,23 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATIC_ROOT.mkdir(parents=True, exist_ok=True)
 STATICFILES_DIRS = []
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Manifest storage requires collectstatic; use plain storage in DEBUG to avoid
+# Missing staticfiles manifest entry 500s during local development.
+if DEBUG:
+    _STATICFILES_BACKEND = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+else:
+    _STATICFILES_BACKEND = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = _STATICFILES_BACKEND
 STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
-    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+    'staticfiles': {'BACKEND': _STATICFILES_BACKEND},
 }
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
+# Local-only: set SERVE_MEDIA=true in .env to expose MEDIA_ROOT via Django.
+# Do not enable in production behind a public internet edge.
+SERVE_MEDIA = env.bool("SERVE_MEDIA", default=DEBUG)
+
 
 EMAIL_BACKEND = env(
     'EMAIL_BACKEND',

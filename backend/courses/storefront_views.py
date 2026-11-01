@@ -161,7 +161,13 @@ def catalog(request):
         courses = courses.filter(category__slug=category)
     context = {
         'courses': courses,
-        'categories': Course._meta.get_field('category').remote_field.model.objects.order_by('name'),
+        'categories': (
+            (lambda Cat: (
+                Cat.objects.filter(is_official=True).order_by('display_order', 'name', 'pk')
+                if Cat.objects.filter(is_official=True).exists()
+                else Cat.objects.order_by('display_order', 'name', 'pk')
+            ))(Course._meta.get_field('category').remote_field.model)
+        ),
         'query': query,
         'selected_category': category,
         'owned_course_ids': _owned_course_ids(request.user),

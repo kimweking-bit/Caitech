@@ -1,86 +1,185 @@
 /**
  * Canonical course cover images — single source for every course surface.
- * Prefer API media when present; otherwise resolve by slug, then category.
- * All Unsplash URLs verified HTTP 200.
+ *
+ * Resolution order:
+ * 1. Custom API media (non-official / non-generated uploads)
+ * 2. Photography-led cover (category pool + stable hash for variety)
+ * 3. Official local public asset keyed by source_id / slug (legacy generated)
+ * 4. Branded default fallback
+ *
+ * Prefer real photography over generative abstract Pillow covers.
+ * Manifest (legacy): backend/courses/data/course_image_manifest.json
  */
 
-const U = {
-  architecture:
-    "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80",
-  bim: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80",
-  surveying:
-    "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1200&q=80",
-  construction:
-    "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=1200&q=80",
-  engineering:
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
-  coding:
-    "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80",
-  cybersecurity:
-    "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200&q=80",
-  ai: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
-  data: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
-  web: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
-  networking:
-    "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80",
-  design:
-    "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=1200&q=80",
-  business:
-    "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
-  education:
-    "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80",
-  default:
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
+export const DEFAULT_COURSE_IMAGE = "/images/home/discipline-building-v2.jpg";
+
+/** Shared photographic library used across catalogue surfaces. */
+const PHOTO = {
+  building: "/images/home/discipline-building-v2.jpg",
+  buildingAlt: "/images/home/discipline-building.jpg",
+  cad: "/images/home/discipline-cad-v2.jpg",
+  cadAlt: "/images/home/discipline-cad.jpg",
+  engineering: "/images/home/discipline-engineering-v2.jpg",
+  engineeringAlt: "/images/home/discipline-engineering.jpg",
+  electronics: "/images/home/discipline-electronics-v2.jpg",
+  electronicsAlt: "/images/home/discipline-electronics.jpg",
+  data: "/images/home/discipline-data-v2.jpg",
+  dataAlt: "/images/home/discipline-data.jpg",
+  creative: "/images/home/discipline-creative-v2.jpg",
+  creativeAlt: "/images/home/discipline-creative.jpg",
+  ict: "/images/home/discipline-ict-v2.jpg",
+  nairobi: "/images/home/nairobi.jpg",
+  hero: "/images/home/hero-lab-pcb-v4.jpg",
+  blogBim: "/images/home/blog-bim.jpg",
 } as const;
 
-/** Exact slug → cover (CAITECH catalogue + demo programmes). */
-export const COURSE_IMAGE_BY_SLUG: Record<string, string> = {
-  "certificate-architectural-draughtsmanship": U.architecture,
-  "diploma-architecture-technology": U.architecture,
-  "diploma-building-information-modelling": U.bim,
-  "diploma-quantity-surveying": U.surveying,
-  "advanced-diploma-project-management": U.construction,
-  "certificate-autocad-fundamentals": U.engineering,
-  "demo-revit-arch": U.bim,
-  "demo-surveying-intro": U.surveying,
+/**
+ * Photography pools by official Phase 3 category slug.
+ * Multiple photos per category → stable hash picks one per course.
+ */
+export const CATEGORY_PHOTO_POOLS: Record<string, readonly string[]> = {
+  "mep-building-services": [
+    PHOTO.building,
+    PHOTO.buildingAlt,
+    PHOTO.engineering,
+    PHOTO.electronics,
+  ],
+  "architecture-bim-digital-construction": [
+    PHOTO.cad,
+    PHOTO.cadAlt,
+    PHOTO.blogBim,
+    PHOTO.creative,
+  ],
+  "quantity-surveying-cost-management": [
+    PHOTO.engineering,
+    PHOTO.engineeringAlt,
+    PHOTO.data,
+    PHOTO.building,
+  ],
+  "project-management-infrastructure": [
+    PHOTO.nairobi,
+    PHOTO.building,
+    PHOTO.engineering,
+    PHOTO.ict,
+  ],
+  "industrial-engineering-automation": [
+    PHOTO.electronics,
+    PHOTO.electronicsAlt,
+    PHOTO.hero,
+    PHOTO.engineering,
+  ],
+  "renewable-energy-sustainability": [
+    PHOTO.engineering,
+    PHOTO.engineeringAlt,
+    PHOTO.nairobi,
+    PHOTO.building,
+  ],
+  "engineering-finance-investment": [
+    PHOTO.data,
+    PHOTO.dataAlt,
+    PHOTO.ict,
+    PHOTO.creative,
+  ],
+  "corporate-strategy-leadership": [
+    PHOTO.creative,
+    PHOTO.creativeAlt,
+    PHOTO.data,
+    PHOTO.ict,
+  ],
 };
 
-const CATEGORY_RULES: Array<{ test: RegExp; image: string }> = [
-  { test: /bim|revit|building information/i, image: U.bim },
-  { test: /architect|draught|draft/i, image: U.architecture },
-  { test: /survey|quantity|qs\b/i, image: U.surveying },
-  { test: /construct|project manag|site/i, image: U.construction },
-  { test: /cad|autocad|solidworks|engineer/i, image: U.engineering },
-  { test: /cyber|security|ethical hack/i, image: U.cybersecurity },
-  { test: /\bai\b|machine learning|artificial intel/i, image: U.ai },
-  { test: /data scien|analytics|visuali/i, image: U.data },
-  { test: /web dev|frontend|backend|full.?stack/i, image: U.web },
-  { test: /network|cisco|cloud infra/i, image: U.networking },
-  { test: /program|coding|software|python|java/i, image: U.coding },
-  { test: /design|ui\/ux|graphic/i, image: U.design },
-  { test: /business|market|finance/i, image: U.business },
-  { test: /educat|teach|train/i, image: U.education },
-];
+/** Primary photo per category (discovery tiles / fallbacks). */
+export const CATEGORY_PHOTO_COVERS: Record<string, string> = Object.fromEntries(
+  Object.entries(CATEGORY_PHOTO_POOLS).map(([slug, pool]) => [slug, pool[0]]),
+);
 
-export const DEFAULT_COURSE_IMAGE = U.default;
+/** @deprecated alias */
+export const CATEGORY_IMAGES = CATEGORY_PHOTO_COVERS;
 
-/** Resolve the canonical cover for a course (API first, then slug/category). */
-export function resolveCourseImage(opts: {
+export type CourseImageInput = {
+  sourceId?: string | null;
   slug?: string | null;
   title?: string | null;
+  categorySlug?: string | null;
   categoryName?: string | null;
   apiImageUrl?: string | null;
-}): string {
-  const fromApi = opts.apiImageUrl?.trim();
-  if (fromApi) return fromApi;
+};
 
-  const slug = (opts.slug || "").trim().toLowerCase();
-  if (slug && COURSE_IMAGE_BY_SLUG[slug]) return COURSE_IMAGE_BY_SLUG[slug];
+/** Official public path from stable source_id (or slug fallback). */
+export function officialPublicPath(sourceIdOrSlug: string): string {
+  return `/images/courses/official/${sourceIdOrSlug}.webp`;
+}
 
-  const hay = `${opts.categoryName || ""} ${opts.title || ""} ${slug}`;
-  for (const rule of CATEGORY_RULES) {
-    if (rule.test.test(hay)) return rule.image;
+function isGeneratedOfficialAsset(url: string): boolean {
+  return (
+    url.includes("/media/course_thumbnails/official/") ||
+    url.includes("/images/courses/official/")
+  );
+}
+
+/** FNV-1a style hash for stable per-course photo selection. */
+function stableHash(input: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
   }
+  return h >>> 0;
+}
+
+function pickFromPool(pool: readonly string[], key: string): string {
+  if (pool.length === 1) return pool[0];
+  return pool[stableHash(key) % pool.length];
+}
+
+function categoryPhoto(
+  categorySlug?: string | null,
+  seed?: string | null,
+): string | null {
+  const cat = (categorySlug || "").trim();
+  if (!cat) return null;
+  const pool = CATEGORY_PHOTO_POOLS[cat];
+  if (!pool?.length) return CATEGORY_PHOTO_COVERS[cat] || null;
+  if (seed) return pickFromPool(pool, `${cat}::${seed}`);
+  return pool[0];
+}
+
+/**
+ * Resolve the single cover URL for a course.
+ * Prefer real photography over generative abstract covers.
+ * Seeded by slug/sourceId so cards in the same category still vary.
+ */
+export function resolveCourseImage(input: CourseImageInput): string {
+  const api = input.apiImageUrl?.trim() || "";
+  const seed = (input.slug || input.sourceId || input.title || "").trim();
+  const photo = categoryPhoto(input.categorySlug, seed || null);
+
+  // Real custom uploads (instructor/admin) win.
+  if (api && !isGeneratedOfficialAsset(api)) return api;
+
+  // Photography-led category cover with within-category variety.
+  if (photo) return photo;
+
+  const sourceId = (input.sourceId || "").trim();
+  if (sourceId) return officialPublicPath(sourceId);
+
+  if (api) return api;
+
+  const slug = (input.slug || "").trim();
+  if (slug) return officialPublicPath(slug);
 
   return DEFAULT_COURSE_IMAGE;
+}
+
+/** Descriptive alt text for course covers. */
+export function courseImageAlt(input: CourseImageInput): string {
+  const title = (input.title || "Course").trim();
+  const cat = (input.categoryName || "").trim();
+  if (cat) return `${title} — ${cat} programme at CAITECH`;
+  return `${title} — CAITECH technical programme`;
+}
+
+/** Category tile image for discovery grids. */
+export function resolveCategoryImage(categorySlug: string): string {
+  return categoryPhoto(categorySlug) || DEFAULT_COURSE_IMAGE;
 }

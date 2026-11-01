@@ -25,6 +25,19 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
+# Media: static() is a no-op when DEBUG=False. For local course covers with
+# DEBUG=False, set SERVE_MEDIA=true. Production should use proxy/CDN/object storage.
+from django.views.static import serve as media_serve
+
+_serve_media = bool(settings.DEBUG) or bool(getattr(settings, "SERVE_MEDIA", False))
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+elif _serve_media:
+    urlpatterns += [
+        path(
+            "media/<path:path>",
+            media_serve,
+            {"document_root": str(settings.MEDIA_ROOT)},
+        ),
+    ]
 

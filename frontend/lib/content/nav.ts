@@ -3,7 +3,7 @@ import type { NavItem } from "@/types/nav";
 /** Primary chrome — exact client order */
 export const primaryNav: readonly NavItem[] = [
   { label: "Home", href: "/" },
-  { label: "Courses", href: "/courses" },
+  { label: "Courses", href: "/courses", coursesMenu: true },
   { label: "Services", href: "/services" },
   { label: "Blog", href: "/blog" },
   { label: "About Us", href: "/about" },
@@ -37,3 +37,10 @@ export const footerNav = {
     { label: "Terms", href: "/terms" },
   ],
 } as const;
+
+/** Catalogue filter URL for a category slug (existing app mechanism). */
+export function coursesCategoryHref(slug: string): string {
+  const s = slug.trim();
+  if (!s) return "/courses";
+  return `/courses?category=${encodeURIComponent(s)}`;
+}

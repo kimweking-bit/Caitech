@@ -51,6 +51,9 @@ export type CourseListItem = {
   image: string | null;
   category: number | null;
   category_name: string | null;
+  category_slug?: string | null;
+  source_id?: string | null;
+  is_official?: boolean;
   instructor: number | null;
   instructor_username: string | null;
   price: string;
@@ -79,6 +82,7 @@ export type CourseListItem = {
 export type CourseDetail = CourseListItem;
 
 export type CourseListParams = {
+  page_size?: number;
   page?: number;
   search?: string;
   category?: string;
@@ -93,18 +97,24 @@ export type CourseCardModel = {
   description: string;
   imageUrl: string | null;
   categoryLabel: string | null;
+  categorySlug: string | null;
   level: string | null;
+  levelLabel: string | null;
   durationLabel: string | null;
   priceLabel: string | null;
   originalPriceLabel: string | null;
   isFree: boolean;
+  is_official?: boolean;
+  source_id?: string | null;
   isAvailable: boolean;
   rating: number | null;
   reviewCount: number;
 };
 
-
-/* ---- Auth (accounts serializers) ---- */
+export type AuthTokens = {
+  access: string;
+  refresh: string;
+};
 
 export type AuthUser = {
   id: number;
@@ -112,18 +122,15 @@ export type AuthUser = {
   email: string;
   first_name: string;
   last_name: string;
-  phone_number: string | null;
+  phone_number: string;
+  bio?: string;
+  is_staff: boolean;
+  is_superuser: boolean;
   is_student: boolean;
   is_instructor: boolean;
   is_verified_instructor: boolean;
-  is_staff: boolean;
-  bio: string;
-  profile_picture: string | null;
-};
-
-export type AuthTokens = {
-  access: string;
-  refresh: string;
+  groups: string[];
+  date_joined?: string;
 };
 
 export type RegisterPayload = {
